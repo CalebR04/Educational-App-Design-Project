@@ -1,8 +1,21 @@
+"use client";
+
 import Link from "next/link";
 import Navbar from "../../components/Navbar";
+import { useEffect, useState } from "react";
 
 export default function GamesPage() {
   const activeTab = "Games";
+
+  const [memoryScore, setMemoryScore] = useState(0);
+
+  // Load saved score from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem("memoryHighScore");
+    if (saved) {
+      setMemoryScore(Number(saved));
+    }
+  }, []);
 
   const games = [
     {
@@ -10,9 +23,10 @@ export default function GamesPage() {
       description: "Match pairs of ASL signs to their memory card game",
       difficulty: "Easy",
       plays: 12,
-      score: 450,
+      score: memoryScore,
       gradient: "from-blue-500 to-blue-400",
       icon: "⌘",
+      link: "/games/memory",
     },
     {
       title: "Sign Combos",
@@ -22,6 +36,7 @@ export default function GamesPage() {
       score: 320,
       gradient: "from-violet-500 to-fuchsia-400",
       icon: "⚡",
+      link: "/games/combos",
     },
     {
       title: "Sign Battle",
@@ -31,6 +46,7 @@ export default function GamesPage() {
       score: 890,
       gradient: "from-orange-500 to-red-400",
       icon: "🏆",
+      link: "/games/battle",
     },
   ];
 
@@ -68,9 +84,10 @@ export default function GamesPage() {
 
         <section className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
           {games.map((game) => (
-            <div
+            <Link
               key={game.title}
-              className="overflow-hidden rounded-xl border-2 border-gray-200 bg-white shadow-sm"
+              href={game.link}
+              className="block overflow-hidden rounded-xl border-2 border-gray-200 bg-white shadow-sm hover:shadow-md transition"
             >
               <div className={`bg-gradient-to-r ${game.gradient} p-6 text-white`}>
                 <div className="text-2xl">{game.icon}</div>
@@ -94,7 +111,7 @@ export default function GamesPage() {
                   <p className="text-xs text-gray-500">High Score</p>
                 </div>
               </div>
-            </div>
+            </Link>
           ))}
         </section>
       </main>
