@@ -32,7 +32,7 @@ function createCards(numPairs = 10): Card[] {
       flipped: false,
       matched: false,
     });
-    
+
     cards.push({
       id: index * 2 + 1,
       type: "image",
@@ -54,6 +54,9 @@ export default function MemoryGame() {
   const [moves, setMoves] = useState(20);
   const [gameOver, setGameOver] = useState(false);
 
+  // New flag: when true, ignore clicks (prevents fast clicking)
+  const [isChecking, setIsChecking] = useState(false);
+
   useEffect(() => {
     const savedScore = localStorage.getItem("memoryHighScore");
     if (savedScore) setHighScore(Number(savedScore));
@@ -70,6 +73,7 @@ export default function MemoryGame() {
     setMoves(20);
     setCards(createCards());
     setSelected([]);
+    setIsChecking(false);
   }
 
   function restartGame() {
@@ -78,18 +82,23 @@ export default function MemoryGame() {
     setCards(createCards());
     setSelected([]);
     setGameOver(false);
+    setIsChecking(false);
   }
 
   function handleFlip(index: number) {
-    if (cards[index].flipped || cards[index].matched || gameOver) return;
+    if (isChecking) return;
+    if (gameOver) return;
+    if (cards[index].flipped || cards[index].matched) return;
 
     const newCards = [...cards];
     newCards[index].flipped = true;
     const newSelected = [...selected, index];
+
     setCards(newCards);
     setSelected(newSelected);
 
     if (newSelected.length === 2) {
+      setIsChecking(true);
       setMoves((m) => m - 1);
 
       const [a, b] = newSelected;
@@ -100,18 +109,27 @@ export default function MemoryGame() {
       if (isMatch) {
         newCards[a].matched = true;
         newCards[b].matched = true;
+        setCards([...newCards]);
         setScore((s) => s + 10);
-        setSelected([]);
 
         setTimeout(() => {
-          if (newCards.every((card) => card.matched)) nextLevel();
-        }, 300);
+          setSelected([]);
+          setIsChecking(false);
+
+          if (newCards.every((c) => c.matched)) {
+            const wins = Number(localStorage.getItem("memoryWins") || 0);
+            localStorage.setItem("memoryWins", (wins + 1).toString());
+
+            setTimeout(nextLevel, 400);
+          }
+        }, 600);
       } else {
         setTimeout(() => {
           newCards[a].flipped = false;
           newCards[b].flipped = false;
           setCards([...newCards]);
           setSelected([]);
+          setIsChecking(false);
         }, 800);
       }
     }
@@ -121,18 +139,18 @@ export default function MemoryGame() {
     if (moves <= 0 && !gameOver) {
       setGameOver(true);
       setScore(0);
+      setIsChecking(false);
     }
-  }, [moves]);
+  }, [moves, gameOver]);
 
   return (
     <div className="min-h-screen bg-white pb-20">
       <Navbar active="Games" />
 
       <main className="max-w-5xl mx-auto mt-8 px-4">
-
         {/* Back button */}
         <button
-          onClick={() => window.location.href = "/games"}
+          onClick={() => (window.location.href = "/games")}
           className="flex items-center gap-2 rounded-xl px-4 py-2 text-lg font-semibold text-blue-600 hover:bg-blue-50 transition mb-2"
         >
           <span className="text-xl">&larr;</span>
@@ -164,29 +182,43 @@ export default function MemoryGame() {
         {/* Game board */}
         <div className="mt-6 relative bg-white border-2 border-gray-200 rounded-xl p-6">
           <div className="grid grid-cols-5 gap-4 justify-items-center">
-            {cards.map((card, index) => (
-              <button
-                key={card.id}
-                onClick={() => handleFlip(index)}
-                className={`h-32 w-32 rounded-xl flex items-center justify-center border-2 border-gray-200 hover:border-gray-400 shadow-lg bg-blue-400`}
-              >
-                {card.flipped || card.matched ? (
-                  card.type === "letter" ? (
-                    <span className="text-4xl font-bold text-white">{card.display}</span>
+            {cards.map((card, index) => {
+              // determine visual classes:
+              const isMatched = card.matched;
+              const isFlipped = card.flipped || card.matched;
+              // when matched -> green background; otherwise blue
+              const bgClass = isMatched ? "bg-green-500" : "bg-blue-400";
+              // reduce pointer events while checking to avoid fast double-clicks
+              const pointerClass = isChecking && !isMatched ? "pointer-events-none opacity-90" : "";
+
+              return (
+                <button
+                  key={card.id}
+                  onClick={() => handleFlip(index)}
+                  className={`h-32 w-32 rounded-xl flex items-center justify-center border-2 border-gray-200 hover:border-gray-400 shadow-lg ${bgClass} ${pointerClass}`}
+                >
+                  {isFlipped ? (
+                    card.type === "letter" ? (
+                      <span className="text-4xl font-bold text-white">{card.display}</span>
+                    ) : (
+                      <div className="h-24 w-24 rounded-full bg-white flex items-center justify-center overflow-hidden">
+                        <img src={card.display} alt={card.letter} className="h-full w-full object-cover" />
+                      </div>
+                    )
                   ) : (
-                    <img src={card.display} alt={card.letter} className="h-24 w-24 object-contain" />
-                  )
-                ) : (
-                  <span className="text-4xl font-bold text-white">?</span>
-                )}
-              </button>
-            ))}
+                    <span className="text-4xl font-bold text-white">?</span>
+                  )}
+                </button>
+              );
+            })}
           </div>
 
           {/* Game Over Overlay */}
           {gameOver && (
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 
-                            bg-red-100 border border-red-300 rounded-xl p-8 flex flex-col items-center shadow-lg z-10">
+            <div
+              className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 
+                          bg-red-100 border border-red-300 rounded-xl p-8 flex flex-col items-center shadow-lg z-10"
+            >
               <h2 className="text-2xl font-bold text-red-600">Game Over!</h2>
               <p className="mt-2 text-black text-center">You ran out of moves.</p>
               <button
