@@ -8,13 +8,15 @@ export default function GamesPage() {
   const activeTab = "Games";
 
   const [memoryScore, setMemoryScore] = useState(0);
+  const [memoryWins, setMemoryWins] = useState(0);
 
   // Load saved score from localStorage
   useEffect(() => {
-    const saved = localStorage.getItem("memoryHighScore");
-    if (saved) {
-      setMemoryScore(Number(saved));
-    }
+    const savedScore = localStorage.getItem("memoryHighScore");
+    const savedWins = localStorage.getItem("memoryWins");
+
+    if (savedScore) setMemoryScore(Number(savedScore));
+    if (savedWins) setMemoryWins(Number(savedWins));
   }, []);
 
   const games = [
@@ -22,7 +24,7 @@ export default function GamesPage() {
       title: "Sign Memory",
       description: "Match pairs of ASL signs to their memory card game",
       difficulty: "Easy",
-      plays: 12,
+      plays: memoryWins,
       score: memoryScore,
       gradient: "from-blue-500 to-blue-400",
       icon: "⌘",
@@ -103,7 +105,7 @@ export default function GamesPage() {
               <div className="grid grid-cols-2 px-5 py-4">
                 <div>
                   <p className="text-lg font-bold text-gray-900">{game.plays}</p>
-                  <p className="text-xs text-gray-500">Times Played</p>
+                  <p className="text-xs text-gray-500">Games Won</p>
                 </div>
 
                 <div>
