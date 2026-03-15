@@ -117,10 +117,10 @@ export default function LessonsPage() {
   const overallProgress = 13;
 
   return (
-    <div className="min-h-screen bg-[#f3f4f6]">
+    <div className="min-h-screen bg-white">
       <Navbar active="Lessons" />
 
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <main className="mx-auto max-w-7xl px-6 py-10">
         {/* Header */}
         <section>
           <h1 className="text-4xl font-extrabold tracking-tight text-slate-900">
