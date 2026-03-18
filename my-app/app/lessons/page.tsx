@@ -1,4 +1,5 @@
 import Navbar from "@/components/Navbar";
+import { createClient } from "@/lib/supabase/server";
 import {
   BookOpen,
   Camera,
@@ -8,6 +9,15 @@ import {
   Lock,
   Sparkles,
 } from "lucide-react";
+
+type DbLesson = {
+  id: number;
+  title: string;
+  description: string;
+  category: string;
+  duration: string;
+  is_locked: boolean;
+};
 
 type LessonCard = {
   title: string;
@@ -26,95 +36,154 @@ type LessonSection = {
   lessons: LessonCard[];
 };
 
-export default function LessonsPage() {
-  const sections: LessonSection[] = [
-    {
-      title: "Getting Started",
-      subtitle: "Master the fundamentals of ASL",
-      icon: <BookOpen className="h-5 w-5 text-white" />,
-      iconBg: "bg-blue-500",
-      lessons: [
-        {
-          title: "ASL Alphabet",
-          description: "Learn to fingerspell all 26 letters of the alphabet",
-          duration: "15 min",
-          status: "Completed",
-          progress: 100,
-          tags: ["A-Z Letters", "Practice Tips", "+1 more"],
-        },
-        {
-          title: "Numbers 1-100",
-          description: "Count from 1 to 100 in American Sign Language",
-          duration: "20 min",
-          status: "In Progress",
-          progress: 65,
-          tags: ["1-10", "11-20", "+2 more"],
-        },
-        {
-          title: "Basic Greetings",
-          description: "Essential signs for everyday conversations",
-          duration: "12 min",
-          status: "Not Started",
-          tags: ["Hello/Goodbye", "How are you?", "+1 more"],
-        },
-      ],
-    },
-    {
-      title: "Everyday Vocabulary",
-      subtitle: "Common words and phrases for daily life",
-      icon: <BookOpen className="h-5 w-5 text-white" />,
-      iconBg: "bg-purple-500",
-      lessons: [
-        {
-          title: "Family & Relationships",
-          description: "Signs for family members and relationship terms",
-          duration: "18 min",
-          status: "Not Started",
-          tags: ["Immediate Family", "Extended Family", "+1 more"],
-        },
-        {
-          title: "Food & Drinks",
-          description: "Express your hunger and favorite meals in ASL",
-          duration: "22 min",
-          status: "Locked",
-          tags: ["Meals", "Beverages", "+2 more"],
-        },
-        {
-          title: "Colors & Shapes",
-          description: "Describe the world around you with colors and shapes",
-          duration: "15 min",
-          status: "Locked",
-          tags: ["Primary Colors", "Secondary Colors", "+1 more"],
-        },
-      ],
-    },
-    {
-      title: "Conversational ASL",
-      subtitle: "Build fluency with natural conversations",
-      icon: <Sparkles className="h-5 w-5 text-white" />,
-      iconBg: "bg-green-500",
-      lessons: [
-        {
-          title: "Question Words",
-          description: "Who, What, Where, When, Why, and How in ASL",
-          duration: "16 min",
-          status: "Locked",
-          tags: ["WH-Questions", "Facial Expressions", "+1 more"],
-        },
-        {
-          title: "Time & Dates",
-          description: "Talk about time, days, months, and years",
-          duration: "20 min",
-          status: "Locked",
-          tags: ["Days", "Months", "+2 more"],
-        },
-      ],
-    },
-  ];
+const sectionMeta: Record<
+  string,
+  { subtitle: string; iconBg: string; icon: React.ReactNode }
+> = {
+  "Getting Started": {
+    subtitle: "Master the fundamentals of ASL",
+    iconBg: "bg-blue-500",
+    icon: <BookOpen className="h-5 w-5 text-white" />,
+  },
+  "Everyday Vocabulary": {
+    subtitle: "Common words and phrases for daily life",
+    iconBg: "bg-purple-500",
+    icon: <BookOpen className="h-5 w-5 text-white" />,
+  },
+  "Conversational ASL": {
+    subtitle: "Build fluency with natural conversations",
+    iconBg: "bg-green-500",
+    icon: <Sparkles className="h-5 w-5 text-white" />,
+  },
+};
 
-  const totalCompleted = 1;
-  const totalInProgress = 7;
-  const overallProgress = 13;
+const lessonMeta: Record<
+  string,
+  { tags: string[]; status?: "Completed" | "In Progress" | "Not Started"; progress?: number }
+> = {
+  "ASL Alphabet": {
+    tags: ["A-Z Letters", "Practice Tips", "+1 more"],
+    status: "Completed",
+    progress: 100,
+  },
+  "Numbers 1-100": {
+    tags: ["1-10", "11-20", "+2 more"],
+    status: "In Progress",
+    progress: 65,
+  },
+  "Basic Greetings": {
+    tags: ["Hello/Goodbye", "How are you?", "+1 more"],
+    status: "Not Started",
+  },
+  "Family & Relationships": {
+    tags: ["Immediate Family", "Extended Family", "+1 more"],
+    status: "Not Started",
+  },
+  "Food & Drinks": {
+    tags: ["Meals", "Beverages", "+2 more"],
+  },
+  "Colors & Shapes": {
+    tags: ["Primary Colors", "Secondary Colors", "+1 more"],
+  },
+  "Question Words": {
+    tags: ["WH-Questions", "Facial Expressions", "+1 more"],
+  },
+  "Time & Dates": {
+    tags: ["Days", "Months", "+2 more"],
+  },
+};
+
+function mapDbLessonToCard(lesson: DbLesson): LessonCard {
+  const meta = lessonMeta[lesson.title];
+
+  if (lesson.is_locked) {
+    return {
+      title: lesson.title,
+      description: lesson.description,
+      duration: lesson.duration,
+      status: "Locked",
+      tags: meta?.tags ?? ["+ details soon"],
+    };
+  }
+
+  return {
+    title: lesson.title,
+    description: lesson.description,
+    duration: lesson.duration,
+    status: meta?.status ?? "Not Started",
+    progress: meta?.progress,
+    tags: meta?.tags ?? ["+ details soon"],
+  };
+}
+
+export default async function LessonsPage() {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("lessons")
+    .select("*")
+    .order("id", { ascending: true });
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-white">
+        <Navbar active="Lessons" />
+        <main className="mx-auto max-w-7xl px-6 py-10">
+          <h1 className="text-4xl font-extrabold tracking-tight text-slate-900">
+            Learn ASL
+          </h1>
+          <p className="mt-2 text-lg text-red-600">Failed to load lessons.</p>
+        </main>
+      </div>
+    );
+  }
+
+  const dbLessons = (data ?? []) as DbLesson[];
+
+  const groupedLessons = dbLessons.reduce<Record<string, DbLesson[]>>((acc, lesson) => {
+    if (!acc[lesson.category]) {
+      acc[lesson.category] = [];
+    }
+    acc[lesson.category].push(lesson);
+    return acc;
+  }, {});
+
+  const sections: LessonSection[] = Object.entries(groupedLessons).map(
+    ([category, lessons]) => {
+      const meta = sectionMeta[category] ?? {
+        subtitle: "Continue building your ASL skills",
+        iconBg: "bg-slate-500",
+        icon: <BookOpen className="h-5 w-5 text-white" />,
+      };
+
+      return {
+        title: category,
+        subtitle: meta.subtitle,
+        iconBg: meta.iconBg,
+        icon: meta.icon,
+        lessons: lessons.map(mapDbLessonToCard),
+      };
+    }
+  );
+
+  const totalCompleted = sections
+    .flatMap((section) => section.lessons)
+    .filter((lesson) => lesson.status === "Completed").length;
+
+  const totalInProgress = sections
+    .flatMap((section) => section.lessons)
+    .filter((lesson) => lesson.status === "In Progress").length;
+
+  const totalLessons = sections.flatMap((section) => section.lessons).length;
+
+  const overallProgress =
+    totalLessons > 0
+      ? Math.round(
+          sections
+            .flatMap((section) => section.lessons)
+            .reduce((sum, lesson) => sum + (lesson.progress ?? 0), 0) / totalLessons
+        )
+      : 0;
 
   return (
     <div className="min-h-screen bg-white">
@@ -148,8 +217,7 @@ export default function LessonsPage() {
                   </h3>
                   <p className="mt-2 max-w-xl text-lg leading-8 text-slate-600">
                     Use your camera to practice signs with real-time AI
-                    feedback. Perfect your handshape, orientation, and
-                    movement.
+                    feedback. Perfect your handshape, orientation, and movement.
                   </p>
 
                   <div className="mt-5 flex flex-wrap items-center gap-4 text-sm">
