@@ -132,11 +132,11 @@ const defaultSections: LessonSection[] = [
   ];
 
 export default function LessonsPage() {
-  // 1. Setup the state
+  // Setup the state
   const [sections, setSections] = useState<LessonSection[]>(defaultSections);
   const [stats, setStats] = useState({ completed: 0, inProgress: 0, overall: 0 });
 
-  // 2. Fetch the data from Local Storage when the page loads
+  // Fetch the data from Local Storage when the page loads
   useEffect(() => {
     let comp = 0;
     let inProg = 0;
@@ -150,7 +150,7 @@ export default function LessonsPage() {
         
         totalTrackedLessons++;
         
-        // Extract the lesson ID from the href (e.g., "/lessons/alphabet-1" -> "alphabet-1")
+        // Extract the lesson ID from the href
         const lessonId = lesson.href.split("/").pop();
         const savedData = localStorage.getItem(`sign_quest_progress_${lessonId}`);
         
