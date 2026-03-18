@@ -1,4 +1,10 @@
+"use client";
+
 import Navbar from "@/components/Navbar";
+import Link from "next/link";
+
+import { useState, useEffect } from "react";
+
 import {
   BookOpen,
   Camera,
@@ -16,6 +22,7 @@ type LessonCard = {
   status: "Completed" | "In Progress" | "Not Started" | "Locked";
   progress?: number;
   tags: string[];
+  href?: string;
 };
 
 type LessonSection = {
@@ -26,8 +33,7 @@ type LessonSection = {
   lessons: LessonCard[];
 };
 
-export default function LessonsPage() {
-  const sections: LessonSection[] = [
+const defaultSections: LessonSection[] = [
     {
       title: "Getting Started",
       subtitle: "Master the fundamentals of ASL",
@@ -35,20 +41,22 @@ export default function LessonsPage() {
       iconBg: "bg-blue-500",
       lessons: [
         {
-          title: "ASL Alphabet",
-          description: "Learn to fingerspell all 26 letters of the alphabet",
-          duration: "15 min",
+          title: "ASL Alphabet: A-M",
+          description: "Master the first half of the alphabet from A to M.",
+          duration: "10 min",
           status: "Completed",
           progress: 100,
-          tags: ["A-Z Letters", "Practice Tips", "+1 more"],
+          tags: ["A-M", "Fingerspelling", "Handshapes"],
+          href: "/lessons/alphabet-1", 
         },
         {
-          title: "Numbers 1-100",
-          description: "Count from 1 to 100 in American Sign Language",
-          duration: "20 min",
+          title: "ASL Alphabet: N-Z",
+          description: "Complete the alphabet by learning letters N through Z.",
+          duration: "12 min",
           status: "In Progress",
-          progress: 65,
-          tags: ["1-10", "11-20", "+2 more"],
+          progress: 15,
+          tags: ["N-Z", "Motion Signs", "Review"],
+          href: "/lessons/alphabet-2", 
         },
         {
           title: "Basic Greetings",
@@ -112,9 +120,55 @@ export default function LessonsPage() {
     },
   ];
 
-  const totalCompleted = 1;
-  const totalInProgress = 7;
-  const overallProgress = 13;
+export default function LessonsPage() {
+  // 1. Setup the state
+  const [sections, setSections] = useState<LessonSection[]>(defaultSections);
+  const [stats, setStats] = useState({ completed: 0, inProgress: 0, overall: 0 });
+
+  // 2. Fetch the data from Local Storage when the page loads
+  useEffect(() => {
+    let comp = 0;
+    let inProg = 0;
+    let totalTrackedLessons = 0;
+    let totalProgressPoints = 0;
+
+    const updatedSections = defaultSections.map(section => {
+      const updatedLessons = section.lessons.map(lesson => {
+        // Skip locked or non-linked lessons for stats
+        if (!lesson.href || lesson.status === "Locked") return lesson;
+        
+        totalTrackedLessons++;
+        
+        // Extract the lesson ID from the href (e.g., "/lessons/alphabet-1" -> "alphabet-1")
+        const lessonId = lesson.href.split("/").pop();
+        const savedData = localStorage.getItem(`sign_quest_progress_${lessonId}`);
+        
+        if (savedData) {
+          const parsed = JSON.parse(savedData);
+          if (parsed.status === "Completed") {
+            comp++;
+            totalProgressPoints += 100;
+          } else if (parsed.status === "In Progress") {
+            inProg++;
+            totalProgressPoints += parsed.progress;
+          }
+          // Return the lesson with the updated saved progress
+          return { ...lesson, status: parsed.status, progress: parsed.progress };
+        }
+        
+        return lesson;
+      });
+      return { ...section, lessons: updatedLessons };
+    });
+
+    // Update the UI
+    setSections(updatedSections);
+    setStats({
+      completed: comp,
+      inProgress: inProg,
+      overall: totalTrackedLessons ? Math.round(totalProgressPoints / totalTrackedLessons) : 0
+    });
+  }, []);
 
   return (
     <div className="min-h-screen bg-white">
@@ -210,17 +264,17 @@ export default function LessonsPage() {
 
           <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-3">
             <div className="rounded-2xl bg-white/15 p-5 backdrop-blur-sm">
-              <div className="text-5xl font-extrabold">{totalCompleted}</div>
+              <div className="text-5xl font-extrabold">{stats.completed}</div>
               <div className="mt-1 text-lg text-white/90">Completed</div>
             </div>
 
             <div className="rounded-2xl bg-white/15 p-5 backdrop-blur-sm">
-              <div className="text-5xl font-extrabold">{totalInProgress}</div>
+              <div className="text-5xl font-extrabold">{stats.inProgress}</div>
               <div className="mt-1 text-lg text-white/90">In Progress</div>
             </div>
 
             <div className="rounded-2xl bg-white/15 p-5 backdrop-blur-sm">
-              <div className="text-5xl font-extrabold">{overallProgress}%</div>
+              <div className="text-5xl font-extrabold">{stats.overall}%</div>
               <div className="mt-1 text-lg text-white/90">Overall</div>
             </div>
           </div>
@@ -228,7 +282,7 @@ export default function LessonsPage() {
           <div className="mt-6 h-3 w-full rounded-full bg-white/25">
             <div
               className="h-3 rounded-full bg-white"
-              style={{ width: `${overallProgress}%` }}
+              style={{ width: `${stats.overall}%` }}
             />
           </div>
         </section>
@@ -314,9 +368,9 @@ function LessonCardView({ lesson }: { lesson: LessonCard }) {
 
   const muted = isLocked ? "opacity-45" : "";
 
-  return (
+  const CardContent = (
     <div
-      className={`rounded-3xl border bg-white p-6 shadow-sm transition hover:shadow-md ${cardClasses} ${muted}`}
+      className={`flex h-full flex-col rounded-3xl border bg-white p-6 shadow-sm transition hover:shadow-md ${cardClasses} ${muted}`}
     >
       <div className="flex items-start justify-between gap-4">
         <div className={`flex items-center gap-2 text-sm font-semibold ${statusColor}`}>
@@ -334,7 +388,7 @@ function LessonCardView({ lesson }: { lesson: LessonCard }) {
       </div>
 
       <h3 className="mt-5 text-3xl font-bold text-slate-900">{lesson.title}</h3>
-      <p className="mt-3 text-lg leading-8 text-slate-600">{lesson.description}</p>
+      <p className="mt-3 flex-1 text-lg leading-8 text-slate-600">{lesson.description}</p>
 
       <div className="mt-5 flex flex-wrap gap-2">
         {lesson.tags.map((tag) => (
@@ -364,4 +418,16 @@ function LessonCardView({ lesson }: { lesson: LessonCard }) {
       )}
     </div>
   );
+
+  const isClickable = lesson.href && !isLocked;
+
+  if (isClickable) {
+    return (
+      <Link href={lesson.href!} className="block h-full transition-transform active:scale-95">
+        {CardContent}
+      </Link>
+    );
+  }
+
+  return CardContent;
 }
