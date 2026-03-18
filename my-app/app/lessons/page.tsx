@@ -43,7 +43,6 @@ type LessonSection = {
   lessons: LessonCard[];
 };
 
-<<<<<<< HEAD
 const defaultSections: LessonSection[] = [
     {
       title: "Getting Started",
@@ -132,11 +131,11 @@ const defaultSections: LessonSection[] = [
   ];
 
 export default function LessonsPage() {
-  // 1. Setup the state
+  // Setup the state
   const [sections, setSections] = useState<LessonSection[]>(defaultSections);
   const [stats, setStats] = useState({ completed: 0, inProgress: 0, overall: 0 });
 
-  // 2. Fetch the data from Local Storage when the page loads
+  // Fetch the data from Local Storage when the page loads
   useEffect(() => {
     let comp = 0;
     let inProg = 0;
@@ -150,7 +149,7 @@ export default function LessonsPage() {
         
         totalTrackedLessons++;
         
-        // Extract the lesson ID from the href (e.g., "/lessons/alphabet-1" -> "alphabet-1")
+        // Extract the lesson ID from the href
         const lessonId = lesson.href.split("/").pop();
         const savedData = localStorage.getItem(`sign_quest_progress_${lessonId}`);
         
@@ -180,156 +179,6 @@ export default function LessonsPage() {
       overall: totalTrackedLessons ? Math.round(totalProgressPoints / totalTrackedLessons) : 0
     });
   }, []);
-=======
-const sectionMeta: Record<
-  string,
-  { subtitle: string; iconBg: string; icon: React.ReactNode }
-> = {
-  "Getting Started": {
-    subtitle: "Master the fundamentals of ASL",
-    iconBg: "bg-blue-500",
-    icon: <BookOpen className="h-5 w-5 text-white" />,
-  },
-  "Everyday Vocabulary": {
-    subtitle: "Common words and phrases for daily life",
-    iconBg: "bg-purple-500",
-    icon: <BookOpen className="h-5 w-5 text-white" />,
-  },
-  "Conversational ASL": {
-    subtitle: "Build fluency with natural conversations",
-    iconBg: "bg-green-500",
-    icon: <Sparkles className="h-5 w-5 text-white" />,
-  },
-};
-
-const lessonMeta: Record<
-  string,
-  { tags: string[]; status?: "Completed" | "In Progress" | "Not Started"; progress?: number }
-> = {
-  "ASL Alphabet": {
-    tags: ["A-Z Letters", "Practice Tips", "+1 more"],
-    status: "Completed",
-    progress: 100,
-  },
-  "Numbers 1-100": {
-    tags: ["1-10", "11-20", "+2 more"],
-    status: "In Progress",
-    progress: 65,
-  },
-  "Basic Greetings": {
-    tags: ["Hello/Goodbye", "How are you?", "+1 more"],
-    status: "Not Started",
-  },
-  "Family & Relationships": {
-    tags: ["Immediate Family", "Extended Family", "+1 more"],
-    status: "Not Started",
-  },
-  "Food & Drinks": {
-    tags: ["Meals", "Beverages", "+2 more"],
-  },
-  "Colors & Shapes": {
-    tags: ["Primary Colors", "Secondary Colors", "+1 more"],
-  },
-  "Question Words": {
-    tags: ["WH-Questions", "Facial Expressions", "+1 more"],
-  },
-  "Time & Dates": {
-    tags: ["Days", "Months", "+2 more"],
-  },
-};
-
-function mapDbLessonToCard(lesson: DbLesson): LessonCard {
-  const meta = lessonMeta[lesson.title];
-
-  if (lesson.is_locked) {
-    return {
-      title: lesson.title,
-      description: lesson.description,
-      duration: lesson.duration,
-      status: "Locked",
-      tags: meta?.tags ?? ["+ details soon"],
-    };
-  }
-
-  return {
-    title: lesson.title,
-    description: lesson.description,
-    duration: lesson.duration,
-    status: meta?.status ?? "Not Started",
-    progress: meta?.progress,
-    tags: meta?.tags ?? ["+ details soon"],
-  };
-}
-
-export default async function LessonsPage() {
-  const supabase = await createClient();
-
-  const { data, error } = await supabase
-    .from("lessons")
-    .select("*")
-    .order("id", { ascending: true });
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-white">
-        <Navbar active="Lessons" />
-        <main className="mx-auto max-w-7xl px-6 py-10">
-          <h1 className="text-4xl font-extrabold tracking-tight text-slate-900">
-            Learn ASL
-          </h1>
-          <p className="mt-2 text-lg text-red-600">Failed to load lessons.</p>
-        </main>
-      </div>
-    );
-  }
-
-  const dbLessons = (data ?? []) as DbLesson[];
-
-  const groupedLessons = dbLessons.reduce<Record<string, DbLesson[]>>((acc, lesson) => {
-    if (!acc[lesson.category]) {
-      acc[lesson.category] = [];
-    }
-    acc[lesson.category].push(lesson);
-    return acc;
-  }, {});
-
-  const sections: LessonSection[] = Object.entries(groupedLessons).map(
-    ([category, lessons]) => {
-      const meta = sectionMeta[category] ?? {
-        subtitle: "Continue building your ASL skills",
-        iconBg: "bg-slate-500",
-        icon: <BookOpen className="h-5 w-5 text-white" />,
-      };
-
-      return {
-        title: category,
-        subtitle: meta.subtitle,
-        iconBg: meta.iconBg,
-        icon: meta.icon,
-        lessons: lessons.map(mapDbLessonToCard),
-      };
-    }
-  );
-
-  const totalCompleted = sections
-    .flatMap((section) => section.lessons)
-    .filter((lesson) => lesson.status === "Completed").length;
-
-  const totalInProgress = sections
-    .flatMap((section) => section.lessons)
-    .filter((lesson) => lesson.status === "In Progress").length;
-
-  const totalLessons = sections.flatMap((section) => section.lessons).length;
-
-  const overallProgress =
-    totalLessons > 0
-      ? Math.round(
-          sections
-            .flatMap((section) => section.lessons)
-            .reduce((sum, lesson) => sum + (lesson.progress ?? 0), 0) / totalLessons
-        )
-      : 0;
->>>>>>> 2322bbea839aae61df3a1cb164baddfe3166f978
 
   return (
     <div className="min-h-screen bg-white">
