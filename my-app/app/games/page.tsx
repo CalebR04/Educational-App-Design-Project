@@ -29,6 +29,7 @@ export default function GamesPage() {
       gradient: "from-blue-500 to-blue-400",
       icon: "⌘",
       link: "/games/memory",
+      available: true,
     },
     {
       title: "Sign Combos",
@@ -39,6 +40,7 @@ export default function GamesPage() {
       gradient: "from-violet-500 to-fuchsia-400",
       icon: "⚡",
       link: "/games/combos",
+      available: true,
     },
     {
       title: "Sign Battle",
@@ -46,9 +48,10 @@ export default function GamesPage() {
       difficulty: "Hard",
       plays: 15,
       score: 890,
-      gradient: "from-orange-500 to-red-400",
+      gradient: "from-gray-400 to-gray-300",
       icon: "🏆",
       link: "/games/battle",
+      available: false, // Set unavailable
     },
   ];
 
@@ -76,45 +79,79 @@ export default function GamesPage() {
             )}
           </button>
 
+          {/*
           <Link
             href="/games/leaderboard"
             className="font-bold text-gray-700 hover:text-gray-900"
           >
             Leaderboard
           </Link>
+          */}
         </section>
 
         <section className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
-          {games.map((game) => (
-            <Link
-              key={game.title}
-              href={game.link}
-              className="block overflow-hidden rounded-xl border-2 border-gray-200 bg-white shadow-sm hover:shadow-md transition"
-            >
-              <div className={`bg-gradient-to-r ${game.gradient} p-6 text-white`}>
-                <div className="text-2xl">{game.icon}</div>
+          {games.map((game) =>
+            game.available ? (
+              // Available game card
+              <Link
+                key={game.title}
+                href={game.link}
+                className="block overflow-hidden rounded-xl border-2 border-gray-200 bg-white shadow-sm hover:shadow-md transition"
+              >
+                <div className={`bg-gradient-to-r ${game.gradient} p-6 text-white`}>
+                  <div className="text-2xl">{game.icon}</div>
 
-                <h2 className="mt-4 text-2xl font-bold">{game.title}</h2>
-                <p className="mt-2 text-sm text-white/90">{game.description}</p>
+                  <h2 className="mt-4 text-2xl font-bold">{game.title}</h2>
+                  <p className="mt-2 text-sm text-white/90">{game.description}</p>
 
-                <div className="mt-4 inline-flex rounded-full bg-white/20 px-3 py-1 text-xs font-semibold">
-                  {game.difficulty}
+                  <div className="mt-4 inline-flex rounded-full bg-white/20 px-3 py-1 text-xs font-semibold">
+                    {game.difficulty}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 px-5 py-4">
+                  <div>
+                    <p className="text-lg font-bold text-gray-900">{game.plays}</p>
+                    <p className="text-xs text-gray-500">Games Won</p>
+                  </div>
+
+                  <div>
+                    <p className="text-lg font-bold text-gray-900">{game.score}</p>
+                    <p className="text-xs text-gray-500">High Score</p>
+                  </div>
+                </div>
+              </Link>
+            ) : (
+              // Unavailable (greyed out) game card
+              <div
+                key={game.title}
+                className="block overflow-hidden rounded-xl border-2 border-gray-200 bg-gray-100 shadow-sm cursor-not-allowed"
+              >
+                <div className="bg-gray-400 p-6 text-white">
+                  <div className="text-2xl opacity-70">{game.icon}</div>
+
+                  <h2 className="mt-4 text-2xl font-bold opacity-70">{game.title}</h2>
+                  <p className="mt-2 text-sm text-white/70">Not Available</p>
+
+                  <div className="mt-4 inline-flex rounded-full bg-white/20 px-3 py-1 text-xs font-semibold opacity-50">
+                    {game.difficulty}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 px-5 py-4">
+                  <div>
+                    <p className="text-lg font-bold text-gray-500">-</p>
+                    <p className="text-xs text-gray-400">Games Won</p>
+                  </div>
+
+                  <div>
+                    <p className="text-lg font-bold text-gray-500">-</p>
+                    <p className="text-xs text-gray-400">High Score</p>
+                  </div>
                 </div>
               </div>
-
-              <div className="grid grid-cols-2 px-5 py-4">
-                <div>
-                  <p className="text-lg font-bold text-gray-900">{game.plays}</p>
-                  <p className="text-xs text-gray-500">Games Won</p>
-                </div>
-
-                <div>
-                  <p className="text-lg font-bold text-gray-900">{game.score}</p>
-                  <p className="text-xs text-gray-500">High Score</p>
-                </div>
-              </div>
-            </Link>
-          ))}
+            )
+          )}
         </section>
       </main>
     </div>
