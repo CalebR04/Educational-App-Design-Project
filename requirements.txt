@@ -1,0 +1,6 @@
+opencv-python
+uvicorn
+fastapi
+torchvision
+ultralytics
+mediapipe
