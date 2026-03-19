@@ -36,6 +36,7 @@ export default function GamesPage() {
       gradient: "from-blue-400 to-blue-600",
       icon: "⌘",
       link: "/games/memory",
+      available: true,
     },
     {
       title: "Sign Combos",
@@ -46,6 +47,7 @@ export default function GamesPage() {
       gradient: "from-purple-400 to-purple-600",
       icon: "⚡",
       link: "/games/combos",
+      available: true,
     },
     {
       title: "Sign Battle",
@@ -84,6 +86,7 @@ export default function GamesPage() {
             )}
           </button>
 
+          {/*
           <Link
             href="/games/leaderboard"
             className="px-6 py-3 font-bold text-lg text-gray-600 hover:text-gray-900 transition-all"
