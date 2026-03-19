@@ -17,7 +17,6 @@ type Card = {
 };
 
 function createCards(numPairs = 10): Card[] {
-  // Randomly select letters from the full alphabet
   const shuffledLetters = allLetters.sort(() => 0.5 - Math.random());
   const selectedLetters = shuffledLetters.slice(0, numPairs);
 
@@ -53,8 +52,6 @@ export default function MemoryGame() {
   const [highScore, setHighScore] = useState(0);
   const [moves, setMoves] = useState(20);
   const [gameOver, setGameOver] = useState(false);
-
-  // New flag: when true, ignore clicks (prevents fast clicking)
   const [isChecking, setIsChecking] = useState(false);
 
   useEffect(() => {
@@ -86,9 +83,7 @@ export default function MemoryGame() {
   }
 
   function handleFlip(index: number) {
-    if (isChecking) return;
-    if (gameOver) return;
-    if (cards[index].flipped || cards[index].matched) return;
+    if (isChecking || gameOver || cards[index].flipped || cards[index].matched) return;
 
     const newCards = [...cards];
     newCards[index].flipped = true;
@@ -119,7 +114,6 @@ export default function MemoryGame() {
           if (newCards.every((c) => c.matched)) {
             const wins = Number(localStorage.getItem("memoryWins") || 0);
             localStorage.setItem("memoryWins", (wins + 1).toString());
-
             setTimeout(nextLevel, 400);
           }
         }, 600);
@@ -148,7 +142,6 @@ export default function MemoryGame() {
       <Navbar active="Games" />
 
       <main className="max-w-5xl mx-auto mt-8 px-4">
-        {/* Back button */}
         <button
           onClick={() => (window.location.href = "/games")}
           className="flex items-center gap-2 rounded-xl px-4 py-2 text-lg font-semibold text-blue-600 hover:bg-blue-50 transition mb-2"
@@ -157,53 +150,50 @@ export default function MemoryGame() {
           <span>Back to Games</span>
         </button>
 
-        {/* Title */}
         <h1 className="text-3xl font-bold text-black">Sign Memory</h1>
         <p className="text-black mt-1">Match the ASL sign to the corresponding letter!</p>
 
-        {/* Info cards */}
         <div className="mt-6 flex gap-4 flex-wrap justify-center">
           <div className="flex items-center bg-white border-2 border-gray-200 rounded-xl px-6 py-4 flex-1 max-w-[300px] justify-center gap-3">
             <div className="w-4 h-4 bg-blue-500 rounded-sm"></div>
             <div className="font-semibold text-black text-center">Moves: {moves}</div>
           </div>
-
           <div className="flex items-center bg-white border-2 border-gray-200 rounded-xl px-6 py-4 flex-1 max-w-[300px] justify-center gap-3">
             <div className="w-4 h-4 bg-green-500 rounded-sm"></div>
             <div className="font-semibold text-black text-center">Score: {score}</div>
           </div>
-
           <div className="flex items-center bg-white border-2 border-gray-200 rounded-xl px-6 py-4 flex-1 max-w-[300px] justify-center gap-3">
             <div className="w-4 h-4 bg-yellow-500 rounded-sm"></div>
             <div className="font-semibold text-black text-center">High Score: {highScore}</div>
           </div>
         </div>
 
-        {/* Game board */}
         <div className="mt-6 relative bg-white border-2 border-gray-200 rounded-xl p-6">
           <div className="grid grid-cols-5 gap-4 justify-items-center">
             {cards.map((card, index) => {
-              // determine visual classes:
               const isMatched = card.matched;
               const isFlipped = card.flipped || card.matched;
-              // when matched -> green background; otherwise blue
+
+              // Add green border if matched
+              const borderClass = isMatched ? "border-4 border-green-500" : "border-2 border-gray-200";
               const bgClass = isMatched ? "bg-green-500" : "bg-blue-400";
-              // reduce pointer events while checking to avoid fast double-clicks
               const pointerClass = isChecking && !isMatched ? "pointer-events-none opacity-90" : "";
 
               return (
                 <button
                   key={card.id}
                   onClick={() => handleFlip(index)}
-                  className={`h-32 w-32 rounded-xl flex items-center justify-center border-2 border-gray-200 hover:border-gray-400 shadow-lg ${bgClass} ${pointerClass}`}
+                  className={`h-32 w-32 rounded-xl flex items-center justify-center shadow-lg overflow-hidden ${bgClass} ${borderClass} ${pointerClass}`}
                 >
                   {isFlipped ? (
                     card.type === "letter" ? (
                       <span className="text-4xl font-bold text-white">{card.display}</span>
                     ) : (
-                      <div className="h-24 w-24 rounded-full bg-white flex items-center justify-center overflow-hidden">
-                        <img src={card.display} alt={card.letter} className="h-full w-full object-cover" />
-                      </div>
+                      <img
+                        src={card.display}
+                        alt={card.letter}
+                        className="h-full w-full object-cover"
+                      />
                     )
                   ) : (
                     <span className="text-4xl font-bold text-white">?</span>
@@ -213,7 +203,6 @@ export default function MemoryGame() {
             })}
           </div>
 
-          {/* Game Over Overlay */}
           {gameOver && (
             <div
               className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 

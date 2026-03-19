@@ -3,6 +3,7 @@ import Navbar from "../components/Navbar";
 export default function Home() {
   const dailyProgress = 0;
 
+  {/*
   const quickActions = [
     {
       title: "Continue Lesson",
@@ -47,6 +48,7 @@ export default function Home() {
       iconText: "text-pink-600",
     },
   ];
+  */}
 
   const achievements = [
     {
@@ -111,6 +113,7 @@ export default function Home() {
           </div>
         </div>
 
+        {/*
         <div className="w-full max-w-6xl mt-8 text-left">
           <h3 className="text-2xl font-bold text-gray-900">Quick Actions</h3>
         </div>
@@ -134,6 +137,7 @@ export default function Home() {
             </div>
           ))}
         </div>
+        */}
 
         <div className="w-full max-w-6xl mt-10 text-left">
           <h3 className="text-2xl font-bold text-gray-900">Recent Achievements</h3>

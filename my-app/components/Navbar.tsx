@@ -23,15 +23,16 @@ export default function Navbar({ active }: NavbarProps) {
 
   return (
     <header className="border-b border-gray-200 bg-white">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
-        <div className="flex items-center gap-3">
+      <div className="mx-auto flex max-w-7xl items-center px-4 py-3">
+        {/* Logo / App Name */}
+        <div className="flex items-center gap-3 mr-auto">
           <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-purple-500 text-lg font-bold text-white">
             SQ
           </div>
           <span className="text-2xl font-bold text-[#0f172a]">SignQuest</span>
         </div>
 
-        <nav className="flex items-center gap-3">
+        <nav className="flex flex-1 justify-center gap-3">
           {tabs.map((tab) => {
             const isActive = tab.name === active;
 
@@ -51,6 +52,7 @@ export default function Navbar({ active }: NavbarProps) {
           })}
         </nav>
 
+        {/*
         <div className="relative">
           <button
             onClick={() => setOpen(!open)}
@@ -91,6 +93,7 @@ export default function Navbar({ active }: NavbarProps) {
             </div>
           )}
         </div>
+        */}
       </div>
     </header>
   );
