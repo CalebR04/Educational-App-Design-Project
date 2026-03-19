@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Navbar from "../../../components/Navbar";
+import { LogOut } from "lucide-react";
 
 const allLetters = [
   "a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z"
@@ -16,7 +16,7 @@ type Card = {
   matched: boolean;
 };
 
-function createCards(numPairs = 10): Card[] {
+function createCards(numPairs = 9): Card[] {
   // Randomly select letters from the full alphabet
   const shuffledLetters = allLetters.sort(() => 0.5 - Math.random());
   const selectedLetters = shuffledLetters.slice(0, numPairs);
@@ -36,7 +36,7 @@ function createCards(numPairs = 10): Card[] {
     cards.push({
       id: index * 2 + 1,
       type: "image",
-      display: `/asl_images/${letter}.png`,
+      display: `/asl_images/letters/${letter}.svg`,
       letter,
       flipped: false,
       matched: false,
@@ -47,7 +47,7 @@ function createCards(numPairs = 10): Card[] {
 }
 
 export default function MemoryGame() {
-  const [cards, setCards] = useState<Card[]>(createCards());
+  const [cards, setCards] = useState<Card[]>(() => createCards());
   const [selected, setSelected] = useState<number[]>([]);
   const [score, setScore] = useState(0);
   const [highScore, setHighScore] = useState(0);
@@ -56,6 +56,7 @@ export default function MemoryGame() {
 
   // New flag: when true, ignore clicks (prevents fast clicking)
   const [isChecking, setIsChecking] = useState(false);
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
 
   useEffect(() => {
     const savedScore = localStorage.getItem("memoryHighScore");
@@ -144,19 +145,18 @@ export default function MemoryGame() {
   }, [moves, gameOver]);
 
   return (
-    <div className="min-h-screen bg-white pb-20">
-      <Navbar active="Games" />
-
-      <main className="max-w-5xl mx-auto mt-8 px-4">
-        {/* Back button */}
+    <div className="min-h-screen bg-white">
+      <div className="flex justify-end px-6 pt-4">
         <button
-          onClick={() => (window.location.href = "/games")}
-          className="flex items-center gap-2 rounded-xl px-4 py-2 text-lg font-semibold text-blue-600 hover:bg-blue-50 transition mb-2"
+          onClick={() => setShowExitConfirm(true)}
+          className="flex items-center gap-2 text-red-500 hover:text-red-600 font-bold transition"
         >
-          <span className="text-xl">&larr;</span>
-          <span>Back to Games</span>
+          <LogOut className="w-5 h-5" />
+          Exit Game
         </button>
+      </div>
 
+      <main className="max-w-6xl mx-auto mt-4 px-4">
         {/* Title */}
         <h1 className="text-3xl font-bold text-black">Sign Memory</h1>
         <p className="text-black mt-1">Match the ASL sign to the corresponding letter!</p>
@@ -181,7 +181,7 @@ export default function MemoryGame() {
 
         {/* Game board */}
         <div className="mt-6 relative bg-white border-2 border-gray-200 rounded-xl p-6">
-          <div className="grid grid-cols-5 gap-4 justify-items-center">
+          <div className="grid grid-cols-6 gap-4 justify-items-center">
             {cards.map((card, index) => {
               // determine visual classes:
               const isMatched = card.matched;
@@ -231,6 +231,23 @@ export default function MemoryGame() {
           )}
         </div>
       </main>
+
+      {showExitConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl p-8 max-w-sm w-full mx-4 text-center shadow-2xl">
+            <h2 className="text-2xl font-black text-slate-900 mb-2">Exit Game?</h2>
+            <p className="text-slate-500 mb-8">Are you sure you want to exit? Progress will not be saved.</p>
+            <div className="flex flex-col gap-3">
+              <button onClick={() => (window.location.href = "/games")} className="w-full rounded-2xl bg-slate-900 py-3 font-bold text-white hover:bg-black transition">
+                Exit
+              </button>
+              <button onClick={() => setShowExitConfirm(false)} className="w-full rounded-2xl border-2 border-slate-200 py-3 font-bold text-slate-700 hover:bg-slate-50 transition">
+                Keep Playing
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

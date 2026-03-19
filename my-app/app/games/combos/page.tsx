@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Play, CheckCircle2, RefreshCcw, BookOpen, MoveHorizontal, Lightbulb, Trophy, ArrowRight, Info, X } from 'lucide-react';
-import Navbar from "../../../components/Navbar";
+import { Play, CheckCircle2, RefreshCcw, BookOpen, MoveHorizontal, Lightbulb, Trophy, ArrowRight, Info, X, LogOut } from 'lucide-react';
 
 interface Sign {
   id: string;
@@ -12,26 +11,26 @@ interface Sign {
 
 // Sign Bank
 const signLibrary: Sign[] = [
-  { id: 'me', name: 'ME (I)', videoUrl: '../../../asl_videos/me.mp4' },
-  { id: 'you', name: 'YOU', videoUrl: '../../../asl_videos/you.mp4' },
-  { id: 'index', name: 'HE/SHE/IT', videoUrl: '../../../asl_videos/index.mp4' },
-  { id: 'they', name: 'THEY', videoUrl: '../../../asl_videos/they.mp4' },
-  { id: 'go', name: 'GO', videoUrl: '../../../asl_videos/go.mp4' },
-  { id: 'want', name: 'WANT', videoUrl: '../../../asl_videos/want.mp4' },
-  { id: 'like', name: 'LIKE', videoUrl: '../../../asl_videos/like.mp4' },
-  { id: 'eat', name: 'EAT', videoUrl: '../../../asl_videos/eat.mp4' },
-  { id: 'work', name: 'WORK', videoUrl: '../../../asl_videos/work.mp4' },
-  { id: 'sleep', name: 'SLEEP', videoUrl: '../../../asl_videos/sleep.mp4' },
-  { id: 'learn', name: 'LEARN', videoUrl: '../../../asl_videos/learn.mp4' },
-  { id: 'see', name: 'SEE', videoUrl: '../../../asl_videos/see.mp4' },
-  { id: 'now', name: 'NOW', videoUrl: '../../../asl_videos/now.mp4' },
-  { id: 'tomorrow', name: 'TOMORROW', videoUrl: '../../../asl_videos/tomorrow.mp4' },
-  { id: 'yesterday', name: 'YESTERDAY', videoUrl: '/asl_videos/yesterday.mp4' },
-  { id: 'night', name: 'NIGHT', videoUrl: '../../../asl_videos/night.mp4' },
-  { id: 'restaurant', name: 'RESTAURANT', videoUrl: '../../../asl_videos/restaurant.mp4' },
-  { id: 'home', name: 'HOME', videoUrl: '../../../asl_videos/home.mp4' },
-  { id: 'school', name: 'SCHOOL', videoUrl: '/asl_videos/school.mp4' },
-  { id: 'gym', name: 'GYM', videoUrl: '../../../asl_videos/gym.mp4' },
+  { id: 'me', name: 'ME (I)', videoUrl: '/asl_videos/daily_life/easy/me.mp4' },
+  { id: 'you', name: 'YOU', videoUrl: '/asl_videos/pronouns/easy/you.mp4' },
+  { id: 'index', name: 'HE/SHE/IT', videoUrl: '/asl_videos/pronouns/easy/index.mp4' },
+  { id: 'they', name: 'THEY', videoUrl: '/asl_videos/pronouns/easy/they.mp4' },
+  { id: 'go', name: 'GO', videoUrl: '/asl_videos/verbs/easy/go.mp4' },
+  { id: 'want', name: 'WANT', videoUrl: '/asl_videos/verbs/easy/want.mp4' },
+  { id: 'like', name: 'LIKE', videoUrl: '/asl_videos/verbs/easy/like.mp4' },
+  { id: 'eat', name: 'EAT', videoUrl: '/asl_videos/verbs/easy/eat.mp4' },
+  { id: 'work', name: 'WORK', videoUrl: '/asl_videos/daily_life/easy/work.mp4' },
+  { id: 'sleep', name: 'SLEEP', videoUrl: '/asl_videos/verbs/medium/sleep.mp4' },
+  { id: 'learn', name: 'LEARN', videoUrl: '/asl_videos/verbs/medium/learn.mp4' },
+  { id: 'see', name: 'SEE', videoUrl: '/asl_videos/verbs/easy/see.mp4' },
+  { id: 'now', name: 'NOW', videoUrl: '/asl_videos/time/easy/now.mp4' },
+  { id: 'tomorrow', name: 'TOMORROW', videoUrl: '/asl_videos/time/medium/tomorrow.mp4' },
+  { id: 'yesterday', name: 'YESTERDAY', videoUrl: '/asl_videos/time/medium/yesterday.mp4' },
+  { id: 'night', name: 'NIGHT', videoUrl: '/asl_videos/time/medium/night.mp4' },
+  { id: 'restaurant', name: 'RESTAURANT', videoUrl: '/asl_videos/daily_life/medium/restaurant.mp4' },
+  { id: 'home', name: 'HOME', videoUrl: '/asl_videos/daily_life/easy/home.mp4' },
+  { id: 'school', name: 'SCHOOL', videoUrl: '/asl_videos/daily_life/easy/school.mp4' },
+  { id: 'gym', name: 'GYM', videoUrl: '/asl_videos/daily_life/medium/gym.mp4' },
 ];
 
 // Question Bank
@@ -69,6 +68,7 @@ export default function SignComboPage() {
 
   // UI & Drag States
   const [showInfoModal, setShowInfoModal] = useState(false);
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
 
   // Initialize game
@@ -212,7 +212,7 @@ export default function SignComboPage() {
 
         <div className="flex gap-4">
           <button onClick={startNewGame} className="bg-blue-600 text-white px-8 py-4 rounded-2xl font-bold shadow-lg hover:bg-blue-700 transition-colors">Play Again</button>
-          <button onClick={() => window.location.href = '/games'} className="bg-white text-gray-800 border-2 border-gray-200 px-8 py-4 rounded-2xl font-bold hover:bg-gray-50 transition-colors">Exit to Games</button>
+          <button onClick={() => setShowExitConfirm(true)} className="bg-white text-gray-800 border-2 border-gray-200 px-8 py-4 rounded-2xl font-bold hover:bg-gray-50 transition-colors">Exit to Games</button>
         </div>
       </div>
     );
@@ -220,7 +220,15 @@ export default function SignComboPage() {
 
   return (
     <div className="h-screen bg-white text-[#111827] flex flex-col overflow-hidden">
-      <Navbar active="Games" />
+      <div className="flex justify-end px-6 pt-4 shrink-0">
+        <button
+          onClick={() => setShowExitConfirm(true)}
+          className="flex items-center gap-2 text-red-500 hover:text-red-600 font-bold transition"
+        >
+          <LogOut className="w-5 h-5" />
+          Exit Game
+        </button>
+      </div>
 
       {/* Main Content Area */}
       <main className="w-full max-w-7xl mx-auto px-4 py-4 sm:py-8 flex-1 flex flex-col justify-start h-full">
@@ -436,6 +444,23 @@ export default function SignComboPage() {
                   <li><strong>Drop the Extras:</strong> ASL doesn't use words like "am," "is," "are," "the," or "to." Just stick to the core signs!</li>
                 </ul>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showExitConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl p-8 max-w-sm w-full mx-4 text-center shadow-2xl">
+            <h2 className="text-2xl font-black text-slate-900 mb-2">Exit Game?</h2>
+            <p className="text-slate-500 mb-8">Are you sure you want to exit? Progress will not be saved.</p>
+            <div className="flex flex-col gap-3">
+              <button onClick={() => (window.location.href = '/games')} className="w-full rounded-2xl bg-slate-900 py-3 font-bold text-white hover:bg-black transition">
+                Exit
+              </button>
+              <button onClick={() => setShowExitConfirm(false)} className="w-full rounded-2xl border-2 border-slate-200 py-3 font-bold text-slate-700 hover:bg-slate-50 transition">
+                Keep Playing
+              </button>
             </div>
           </div>
         </div>
