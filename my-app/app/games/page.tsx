@@ -3,20 +3,27 @@
 import Link from "next/link";
 import Navbar from "../../components/Navbar";
 import { useEffect, useState } from "react";
+import { Lock } from "lucide-react";
 
 export default function GamesPage() {
   const activeTab = "Games";
 
   const [memoryScore, setMemoryScore] = useState(0);
-  const [memoryWins, setMemoryWins] = useState(0);
+  const [memoryPlayed, setMemoryPlayed] = useState(0);
+  const [combosScore, setCombosScore] = useState(0);
+  const [combosPlayed, setCombosPlayed] = useState(0);
 
-  // Load saved score from localStorage
+  // Load saved scores from localStorage
   useEffect(() => {
-    const savedScore = localStorage.getItem("memoryHighScore");
-    const savedWins = localStorage.getItem("memoryWins");
+    const savedMemoryScore = localStorage.getItem("memoryHighScore");
+    const savedMemoryPlayed = localStorage.getItem("memoryWins");
+    const savedCombosScore = localStorage.getItem("sign_combo_highscore");
+    const savedCombosPlayed = localStorage.getItem("sign_combo_gamesplayed");
 
-    if (savedScore) setMemoryScore(Number(savedScore));
-    if (savedWins) setMemoryWins(Number(savedWins));
+    if (savedMemoryScore) setMemoryScore(Number(savedMemoryScore));
+    if (savedMemoryPlayed) setMemoryPlayed(Number(savedMemoryPlayed));
+    if (savedCombosScore) setCombosScore(Number(savedCombosScore));
+    if (savedCombosPlayed) setCombosPlayed(Number(savedCombosPlayed));
   }, []);
 
   const games = [
@@ -24,9 +31,9 @@ export default function GamesPage() {
       title: "Sign Memory",
       description: "Match pairs of ASL signs to their memory card game",
       difficulty: "Easy",
-      plays: memoryWins,
+      plays: memoryPlayed,
       score: memoryScore,
-      gradient: "from-blue-500 to-blue-400",
+      gradient: "from-blue-400 to-blue-600",
       icon: "⌘",
       link: "/games/memory",
     },
@@ -34,9 +41,9 @@ export default function GamesPage() {
       title: "Sign Combos",
       description: "Combine basic signs to create complete phrases and sentences",
       difficulty: "Medium",
-      plays: 8,
-      score: 320,
-      gradient: "from-violet-500 to-fuchsia-400",
+      plays: combosPlayed,
+      score: combosScore,
+      gradient: "from-purple-400 to-purple-600",
       icon: "⚡",
       link: "/games/combos",
     },
@@ -44,78 +51,94 @@ export default function GamesPage() {
       title: "Sign Battle",
       description: "Face AI match opponents to perform signs accurately",
       difficulty: "Hard",
-      plays: 15,
-      score: 890,
-      gradient: "from-orange-500 to-red-400",
+      plays: 0,
+      score: 0,
+      gradient: "from-orange-400 to-red-600",
       icon: "🏆",
       link: "/games/battle",
+      comingSoon: true,
     },
   ];
 
   return (
-    <div className="min-h-screen bg-white text-[#111827]">
+    <div className="min-h-screen bg-white">
       <Navbar active="Games" />
 
-      <main className="w-full max-w-6xl mx-auto mt-8 px-4 pb-12">
-        <section>
-          <h1 className="text-4xl font-bold text-black">Game Center</h1>
-          <p className="mt-2 text-lg text-gray-600">
+      <main className="max-w-7xl mx-auto px-4 py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Game Center</h1>
+          <p className="text-gray-600">
             Play games and compete with learners worldwide
           </p>
-        </section>
+        </div>
 
-        <section className="mt-6 flex items-center gap-6 border-b border-gray-200 pb-3 text-sm">
+        <div className="flex gap-2 mb-8 border-b-2 border-gray-200">
           <button
-            className={`relative font-bold ${
-              activeTab === "Games" ? "text-blue-600" : "text-gray-700"
+            className={`px-6 py-3 font-bold text-lg transition-all relative ${
+              activeTab === "Games" ? "text-blue-600" : "text-gray-600 hover:text-gray-900"
             }`}
           >
             Games
             {activeTab === "Games" && (
-              <span className="absolute -bottom-3 left-0 h-0.5 w-full rounded bg-blue-600" />
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600" />
             )}
           </button>
 
           <Link
             href="/games/leaderboard"
-            className="font-bold text-gray-700 hover:text-gray-900"
+            className="px-6 py-3 font-bold text-lg text-gray-600 hover:text-gray-900 transition-all"
           >
             Leaderboard
           </Link>
-        </section>
+        </div>
 
-        <section className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
-          {games.map((game) => (
-            <Link
-              key={game.title}
-              href={game.link}
-              className="block overflow-hidden rounded-xl border-2 border-gray-200 bg-white shadow-sm hover:shadow-md transition"
-            >
-              <div className={`bg-gradient-to-r ${game.gradient} p-6 text-white`}>
-                <div className="text-2xl">{game.icon}</div>
-
-                <h2 className="mt-4 text-2xl font-bold">{game.title}</h2>
-                <p className="mt-2 text-sm text-white/90">{game.description}</p>
-
-                <div className="mt-4 inline-flex rounded-full bg-white/20 px-3 py-1 text-xs font-semibold">
-                  {game.difficulty}
+        <div className="grid md:grid-cols-3 gap-6 mb-12">
+          {games.map((game) => {
+            const inner = (
+              <>
+                <div className={`flex-1 bg-linear-to-br ${game.gradient} p-8 text-white`}>
+                  <div className="text-4xl mb-4">{game.icon}</div>
+                  <h2 className="text-2xl font-bold mb-2">{game.title}</h2>
+                  <p className="text-white/90 text-sm mb-4">{game.description}</p>
+                  <div className="flex items-center gap-3">
+                    <div className="inline-flex bg-white/20 backdrop-blur px-3 py-1 rounded-full text-sm font-semibold">
+                      {game.difficulty}
+                    </div>
+                    {game.comingSoon && (
+                      <div className="inline-flex items-center gap-1 bg-white/20 backdrop-blur px-3 py-1 rounded-full text-sm font-semibold">
+                        <Lock className="w-3.5 h-3.5" /> Coming Soon
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-
-              <div className="grid grid-cols-2 px-5 py-4">
-                <div>
-                  <p className="text-lg font-bold text-gray-900">{game.plays}</p>
-                  <p className="text-xs text-gray-500">Games Won</p>
+                <div className="p-6 grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-2xl font-bold text-gray-900">{game.plays}</p>
+                    <p className="text-xs text-gray-600">Games Played</p>
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-gray-900">{game.score}</p>
+                    <p className="text-xs text-gray-600">High Score</p>
+                  </div>
                 </div>
+              </>
+            );
 
-                <div>
-                  <p className="text-lg font-bold text-gray-900">{game.score}</p>
-                  <p className="text-xs text-gray-500">High Score</p>
+            if (game.comingSoon) {
+              return (
+                <div key={game.title} className="flex flex-col overflow-hidden rounded-2xl border-2 border-gray-200 bg-white opacity-60 cursor-not-allowed">
+                  {inner}
                 </div>
-              </div>
-            </Link>
-          ))}
-        </section>
+              );
+            }
+
+            return (
+              <Link key={game.title} href={game.link} className="flex flex-col overflow-hidden rounded-2xl border-2 border-gray-200 bg-white hover:border-blue-500 hover:shadow-xl transition-all">
+                {inner}
+              </Link>
+            );
+          })}
+        </div>
       </main>
     </div>
   );

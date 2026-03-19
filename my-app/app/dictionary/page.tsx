@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Search, BookOpen, Video, X, Camera, Image as ImageIcon } from "lucide-react";
+import { Search, Video, X, Image as ImageIcon } from "lucide-react";
 import Navbar from "../../components/Navbar";
-import Link from "next/link";
 
 // --- TYPES ---
 type SignData = {
@@ -15,7 +14,7 @@ type SignData = {
 };
 
 // --- DATA ---
-// Alphabet Data
+// Alphabet
 const alphabetSigns: SignData[] = Array.from({ length: 26 }, (_, i) => {
   const letter = String.fromCharCode(65 + i);
   return {
@@ -23,41 +22,98 @@ const alphabetSigns: SignData[] = Array.from({ length: 26 }, (_, i) => {
     category: "Alphabet",
     difficulty: "Easy",
     mediaType: "image",
-    mediaSrc: `/asl_images/${letter.toLowerCase()}.png`,
+    mediaSrc: `/asl_images/letters/${letter.toLowerCase()}.svg`,
   };
 });
 
+// Numbers
+const numberSigns: SignData[] = Array.from({ length: 10 }, (_, i) => ({
+  name: String(i),
+  category: "Numbers",
+  difficulty: "Easy" as const,
+  mediaType: "image" as const,
+  mediaSrc: `/asl_images/numbers/${i}.svg`,
+}));
 
-// Words
-const wordSigns: SignData[] = [
-  { name: "Hello", category: "Greetings", difficulty: "Easy", mediaType: "video", mediaSrc: "" },
-  { name: "Thank You", category: "Greetings", difficulty: "Easy", mediaType: "video", mediaSrc: "" },
-  { name: "Please", category: "Greetings", difficulty: "Easy", mediaType: "video", mediaSrc: "" },
-  { name: "Sorry", category: "Greetings", difficulty: "Easy", mediaType: "video", mediaSrc: "" },
-  { name: "Help", category: "Daily Life", difficulty: "Easy", mediaType: "video", mediaSrc: "" },
-  { name: "Friend", category: "Relationships", difficulty: "Medium", mediaType: "video", mediaSrc: "" },
-  { name: "Family", category: "Relationships", difficulty: "Medium", mediaType: "video", mediaSrc: "" },
-  { name: "Mother", category: "Relationships", difficulty: "Easy", mediaType: "video", mediaSrc: "" },
-  { name: "Father", category: "Relationships", difficulty: "Easy", mediaType: "video", mediaSrc: "" },
-  { name: "Brother", category: "Relationships", difficulty: "Medium", mediaType: "video", mediaSrc: "" },
-  { name: "Sister", category: "Relationships", difficulty: "Medium", mediaType: "video", mediaSrc: "" },
-  { name: "Love", category: "Relationships", difficulty: "Medium", mediaType: "video", mediaSrc: "" },
-  { name: "Food", category: "Daily Life", difficulty: "Easy", mediaType: "video", mediaSrc: "" },
-  { name: "Water", category: "Daily Life", difficulty: "Easy", mediaType: "video", mediaSrc: "" },
-  { name: "Home", category: "Daily Life", difficulty: "Easy", mediaType: "video", mediaSrc: "https://player.vimeo.com/video/344359901?title=0&byline=0&portrait=0&background=1&loop=1" },
-  { name: "School", category: "Daily Life", difficulty: "Easy", mediaType: "video", mediaSrc: "https://player.vimeo.com/video/345801623?title=0&byline=0&portrait=0&background=1&loop=1" },
-  { name: "Me (I)", category: "Daily Life", difficulty: "Easy", mediaType: "video", mediaSrc: "https://player.vimeo.com/video/344400170?title=0&byline=0&portrait=0&background=1&loop=1"  }
+// Pronouns
+const pronounSigns: SignData[] = [
+  { name: "Me (I)", category: "Pronouns", difficulty: "Easy", mediaType: "video", mediaSrc: "/asl_videos/daily_life/easy/me.mp4" },
+  { name: "You", category: "Pronouns", difficulty: "Easy", mediaType: "video", mediaSrc: "/asl_videos/pronouns/easy/you.mp4" },
+  { name: "He / She / It", category: "Pronouns", difficulty: "Easy", mediaType: "video", mediaSrc: "/asl_videos/pronouns/easy/index.mp4" },
+  { name: "They", category: "Pronouns", difficulty: "Easy", mediaType: "video", mediaSrc: "/asl_videos/pronouns/easy/they.mp4" },
 ];
 
-// Combine both data sets
-const allSigns = [...alphabetSigns, ...wordSigns];
+// Verbs
+const verbSigns: SignData[] = [
+  { name: "Go", category: "Verbs", difficulty: "Easy", mediaType: "video", mediaSrc: "/asl_videos/verbs/easy/go.mp4" },
+  { name: "Want", category: "Verbs", difficulty: "Easy", mediaType: "video", mediaSrc: "/asl_videos/verbs/easy/want.mp4" },
+  { name: "Like", category: "Verbs", difficulty: "Easy", mediaType: "video", mediaSrc: "/asl_videos/verbs/easy/like.mp4" },
+  { name: "See", category: "Verbs", difficulty: "Easy", mediaType: "video", mediaSrc: "/asl_videos/verbs/easy/see.mp4" },
+  { name: "Eat", category: "Verbs", difficulty: "Easy", mediaType: "video", mediaSrc: "/asl_videos/verbs/easy/eat.mp4" },
+  { name: "Learn", category: "Verbs", difficulty: "Medium", mediaType: "video", mediaSrc: "/asl_videos/verbs/medium/learn.mp4" },
+  { name: "Sleep", category: "Verbs", difficulty: "Medium", mediaType: "video", mediaSrc: "/asl_videos/verbs/medium/sleep.mp4" },
+];
+
+// Time
+const timeSigns: SignData[] = [
+  { name: "Now", category: "Time", difficulty: "Easy", mediaType: "video", mediaSrc: "/asl_videos/time/easy/now.mp4" },
+  { name: "Yesterday", category: "Time", difficulty: "Medium", mediaType: "video", mediaSrc: "/asl_videos/time/medium/yesterday.mp4" },
+  { name: "Tomorrow", category: "Time", difficulty: "Medium", mediaType: "video", mediaSrc: "/asl_videos/time/medium/tomorrow.mp4" },
+  { name: "Night", category: "Time", difficulty: "Medium", mediaType: "video", mediaSrc: "/asl_videos/time/medium/night.mp4" },
+];
+
+// Daily Life
+const dailyLifeSigns: SignData[] = [
+  { name: "Home", category: "Daily Life", difficulty: "Easy", mediaType: "video", mediaSrc: "/asl_videos/daily_life/easy/home.mp4" },
+  { name: "School", category: "Daily Life", difficulty: "Easy", mediaType: "video", mediaSrc: "/asl_videos/daily_life/easy/school.mp4" },
+  { name: "Work", category: "Daily Life", difficulty: "Easy", mediaType: "video", mediaSrc: "/asl_videos/daily_life/easy/work.mp4" },
+  { name: "Help", category: "Daily Life", difficulty: "Easy", mediaType: "video", mediaSrc: "/asl_videos/daily_life/easy/help.mp4" },
+  { name: "Water", category: "Daily Life", difficulty: "Easy", mediaType: "video", mediaSrc: "/asl_videos/daily_life/easy/water.mp4" },
+  { name: "Restaurant", category: "Daily Life", difficulty: "Medium", mediaType: "video", mediaSrc: "/asl_videos/daily_life/medium/restaurant.mp4" },
+  { name: "Gym", category: "Daily Life", difficulty: "Medium", mediaType: "video", mediaSrc: "/asl_videos/daily_life/medium/gym.mp4" },
+];
+
+// Greetings
+const greetingSigns: SignData[] = [
+  { name: "Hello", category: "Greetings", difficulty: "Easy", mediaType: "video", mediaSrc: "/asl_videos/greetings/easy/hello.mp4" },
+  { name: "Thank You", category: "Greetings", difficulty: "Easy", mediaType: "video", mediaSrc: "/asl_videos/greetings/easy/thank_you.mp4" },
+  { name: "Please", category: "Greetings", difficulty: "Easy", mediaType: "video", mediaSrc: "/asl_videos/greetings/easy/please.mp4" },
+  { name: "Sorry", category: "Greetings", difficulty: "Easy", mediaType: "video", mediaSrc: "/asl_videos/greetings/easy/sorry.mp4" },
+];
+
+// Relationships
+const relationshipSigns: SignData[] = [
+  { name: "Mother", category: "Relationships", difficulty: "Easy", mediaType: "video", mediaSrc: "/asl_videos/relationships/easy/mother.mp4" },
+  { name: "Father", category: "Relationships", difficulty: "Easy", mediaType: "video", mediaSrc: "/asl_videos/relationships/easy/father.mp4" },
+  { name: "Friend", category: "Relationships", difficulty: "Easy", mediaType: "video", mediaSrc: "/asl_videos/relationships/easy/friend.mp4" },
+  { name: "Family", category: "Relationships", difficulty: "Medium", mediaType: "video", mediaSrc: "/asl_videos/relationships/medium/family.mp4" },
+  { name: "Brother", category: "Relationships", difficulty: "Medium", mediaType: "video", mediaSrc: "/asl_videos/relationships/medium/brother.mp4" },
+  { name: "Sister", category: "Relationships", difficulty: "Medium", mediaType: "video", mediaSrc: "/asl_videos/relationships/medium/sister.mp4" },
+  { name: "Love", category: "Relationships", difficulty: "Medium", mediaType: "video", mediaSrc: "/asl_videos/relationships/medium/love.mp4" },
+];
+
+// Combine
+const allSigns = [
+  ...alphabetSigns,
+  ...numberSigns,
+  ...pronounSigns,
+  ...verbSigns,
+  ...timeSigns,
+  ...dailyLifeSigns,
+  ...greetingSigns,
+  ...relationshipSigns,
+];
 
 const categories = [
   "All",
   "Alphabet",
+  "Numbers",
+  "Pronouns",
+  "Verbs",
+  "Time",
+  "Daily Life",
   "Greetings",
   "Relationships",
-  "Daily Life",
 ];
 
 export default function DictionaryPage() {
@@ -185,40 +241,28 @@ export default function DictionaryPage() {
 
             {/* Modal Media Player */}
             <div className="bg-slate-50 p-6 sm:p-8">
-              <div className="relative flex aspect-video w-full items-center justify-center overflow-hidden rounded-2xl bg-slate-900 shadow-inner">
-                
+              <div className={`relative flex w-full items-center justify-center overflow-hidden rounded-2xl shadow-inner ${selectedSign.mediaType === "image" ? "aspect-video bg-white border border-slate-200" : "bg-slate-900"}`}>
+
                 {selectedSign.mediaType === "image" ? (
-                  // ALPHABET IMAGES
-                  <img 
-                    src={selectedSign.mediaSrc} 
-                    alt={`Sign for ${selectedSign.name}`} 
+                  <img
+                    src={selectedSign.mediaSrc}
+                    alt={`Sign for ${selectedSign.name}`}
                     className="h-full w-full object-contain p-4"
                   />
                 ) : (
-                  // VIDEOS
-                  <iframe 
-                    src={`${selectedSign.mediaSrc}?title=0&byline=0&portrait=0&autoplay=1&loop=1&muted=1`}
-                    className="absolute inset-0 h-full w-full"
-                    allow="autoplay; fullscreen"
-                    allowFullScreen
+                  <video
+                    key={selectedSign.mediaSrc}
+                    src={selectedSign.mediaSrc}
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="w-full h-full object-cover pointer-events-none"
                   />
                 )}
 
               </div>
 
-              {/* Instructions / CTA */}
-              <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <h4 className="font-bold text-slate-900">Ready to try it yourself?</h4>
-                  <p className="text-sm text-slate-600">Practice your handshape using the AI camera.</p>
-                </div>
-                <Link 
-                  href="/lessons"
-                  className="flex items-center justify-center gap-2 rounded-2xl bg-blue-500 px-6 py-4 font-bold text-white transition-colors hover:bg-blue-600 active:scale-95 sm:w-auto w-full"
-                >
-                  <Camera size={20} /> Practice Now
-                </Link>
-              </div>
             </div>
 
           </div>
