@@ -86,7 +86,6 @@ export default function GamesPage() {
             )}
           </button>
 
-          {/*
           <Link
             href="/games/leaderboard"
             className="px-6 py-3 font-bold text-lg text-gray-600 hover:text-gray-900 transition-all"
@@ -144,5 +143,4 @@ export default function GamesPage() {
         </div>
       </main>
     </div>
-  );
-}
+  );}
