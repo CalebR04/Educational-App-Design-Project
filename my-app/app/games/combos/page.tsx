@@ -1,40 +1,40 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Trash2, Play, CheckCircle2, RefreshCcw, BookOpen, MoveHorizontal, Lightbulb, Trophy, ArrowRight } from 'lucide-react';
+import { Play, CheckCircle2, RefreshCcw, BookOpen, MoveHorizontal, Lightbulb, Trophy, ArrowRight, Info, X } from 'lucide-react';
 import Navbar from "../../../components/Navbar";
 
 interface Sign {
   id: string;
   name: string;
-  vimeoUrl: string;
+  videoUrl: string;
 }
 
-// 1. All 20 Provided Signs
+// Sign Bank
 const signLibrary: Sign[] = [
-  { id: 'me', name: 'ME (I)', vimeoUrl: 'https://player.vimeo.com/video/344400170' },
-  { id: 'you', name: 'YOU', vimeoUrl: 'https://player.vimeo.com/video/345973780' },
-  { id: 'index', name: 'HE/SHE/IT', vimeoUrl: 'https://player.vimeo.com/video/346494952' },
-  { id: 'they', name: 'THEY', vimeoUrl: 'https://player.vimeo.com/video/346052458' },
-  { id: 'go', name: 'GO', vimeoUrl: 'https://player.vimeo.com/video/345800220' },
-  { id: 'want', name: 'WANT', vimeoUrl: 'https://player.vimeo.com/video/345798094' },
-  { id: 'like', name: 'LIKE', vimeoUrl: 'https://player.vimeo.com/video/346602424' },
-  { id: 'eat', name: 'EAT', vimeoUrl: 'https://player.vimeo.com/video/345536275' },
-  { id: 'work', name: 'WORK', vimeoUrl: 'https://player.vimeo.com/video/344359531' },
-  { id: 'sleep', name: 'SLEEP', vimeoUrl: 'https://player.vimeo.com/video/345563279' },
-  { id: 'learn', name: 'LEARN', vimeoUrl: 'https://player.vimeo.com/video/344393673' },
-  { id: 'see', name: 'SEE', vimeoUrl: 'https://player.vimeo.com/video/345588085' },
-  { id: 'now', name: 'NOW', vimeoUrl: 'https://player.vimeo.com/video/345800480' },
-  { id: 'tomorrow', name: 'TOMORROW', vimeoUrl: 'https://player.vimeo.com/video/346494879' },
-  { id: 'yesterday', name: 'YESTERDAY', vimeoUrl: 'https://player.vimeo.com/video/345803814' },
-  { id: 'night', name: 'NIGHT', vimeoUrl: 'https://player.vimeo.com/video/344216312' },
-  { id: 'restaurant', name: 'RESTAURANT', vimeoUrl: 'https://player.vimeo.com/video/345972230' },
-  { id: 'home', name: 'HOME', vimeoUrl: 'https://player.vimeo.com/video/344359901' },
-  { id: 'school', name: 'SCHOOL', vimeoUrl: 'https://player.vimeo.com/video/345801623' },
-  { id: 'gym', name: 'GYM', vimeoUrl: 'https://player.vimeo.com/video/346775414' },
+  { id: 'me', name: 'ME (I)', videoUrl: '../../../asl_videos/me.mp4' },
+  { id: 'you', name: 'YOU', videoUrl: '../../../asl_videos/you.mp4' },
+  { id: 'index', name: 'HE/SHE/IT', videoUrl: '../../../asl_videos/index.mp4' },
+  { id: 'they', name: 'THEY', videoUrl: '../../../asl_videos/they.mp4' },
+  { id: 'go', name: 'GO', videoUrl: '../../../asl_videos/go.mp4' },
+  { id: 'want', name: 'WANT', videoUrl: '../../../asl_videos/want.mp4' },
+  { id: 'like', name: 'LIKE', videoUrl: '../../../asl_videos/like.mp4' },
+  { id: 'eat', name: 'EAT', videoUrl: '../../../asl_videos/eat.mp4' },
+  { id: 'work', name: 'WORK', videoUrl: '../../../asl_videos/work.mp4' },
+  { id: 'sleep', name: 'SLEEP', videoUrl: '../../../asl_videos/sleep.mp4' },
+  { id: 'learn', name: 'LEARN', videoUrl: '../../../asl_videos/learn.mp4' },
+  { id: 'see', name: 'SEE', videoUrl: '../../../asl_videos/see.mp4' },
+  { id: 'now', name: 'NOW', videoUrl: '../../../asl_videos/now.mp4' },
+  { id: 'tomorrow', name: 'TOMORROW', videoUrl: '../../../asl_videos/tomorrow.mp4' },
+  { id: 'yesterday', name: 'YESTERDAY', videoUrl: '/asl_videos/yesterday.mp4' },
+  { id: 'night', name: 'NIGHT', videoUrl: '../../../asl_videos/night.mp4' },
+  { id: 'restaurant', name: 'RESTAURANT', videoUrl: '../../../asl_videos/restaurant.mp4' },
+  { id: 'home', name: 'HOME', videoUrl: '../../../asl_videos/home.mp4' },
+  { id: 'school', name: 'SCHOOL', videoUrl: '/asl_videos/school.mp4' },
+  { id: 'gym', name: 'GYM', videoUrl: '../../../asl_videos/gym.mp4' },
 ];
 
-// 2. Phrase Database (10 Phrases - 5 will be chosen randomly per game)
+// Question Bank
 const allPhrases = [
   { english: "I am going home now", correctOrder: ['now', 'me', 'go', 'home'] },
   { english: "Yesterday they worked at school", correctOrder: ['yesterday', 'school', 'they', 'work'] },
@@ -67,7 +67,11 @@ export default function SignComboPage() {
   const [hint, setHint] = useState("");
   const [showReveal, setShowReveal] = useState(false);
 
-  // Initialize game and load from local storage
+  // UI & Drag States
+  const [showInfoModal, setShowInfoModal] = useState(false);
+  const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
+
+  // Initialize game
   useEffect(() => {
     setMounted(true);
     const storedHighScore = localStorage.getItem('sign_combo_highscore');
@@ -96,7 +100,7 @@ export default function SignComboPage() {
     setHint("");
     setShowReveal(false);
 
-    // Build the 12-sign bank: Correct signs + random signs
+    // Build the 6-sign bank
     const correctIds = phrase.correctOrder;
     const correctSigns = signLibrary.filter(s => correctIds.includes(s.id));
     const randomSigns = shuffleArray(signLibrary.filter(s => !correctIds.includes(s.id))).slice(0, 6 - correctSigns.length);
@@ -112,7 +116,6 @@ export default function SignComboPage() {
     let isPerfect = false;
     let currentHint = "";
 
-    // Score Logic
     if (JSON.stringify(user) === JSON.stringify(target)) {
       pointsEarned = 150;
       isPerfect = true;
@@ -140,7 +143,6 @@ export default function SignComboPage() {
 
   const handleNextPhrase = () => {
     if (currentIdx === 4) {
-      // End of Game
       setGameOver(true);
       const newGamesPlayed = gamesPlayed + 1;
       setGamesPlayed(newGamesPlayed);
@@ -157,15 +159,37 @@ export default function SignComboPage() {
     }
   };
 
+  // Drag and Drop Handlers
+  const handleDragStart = (idx: number) => {
+    setDraggedIdx(idx);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (e: React.DragEvent, targetIdx: number) => {
+    e.preventDefault();
+    if (draggedIdx === null || draggedIdx === targetIdx) return;
+
+    const newWorkArea = [...workArea];
+    const draggedItem = newWorkArea.splice(draggedIdx, 1)[0]; // Remove from old spot
+    newWorkArea.splice(targetIdx, 0, draggedItem); // Insert into new spot
+    
+    setWorkArea(newWorkArea);
+    setDraggedIdx(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIdx(null);
+  };
 
   if (!mounted || gamePhrases.length === 0) return null;
 
-  // Filters the current bank to only show signs NOT already in the work area
   const availableSigns = currentBank.filter(
     (bankSign) => !workArea.some((workSign) => workSign.id === bankSign.id)
   );
 
-  // GAME OVER SCREEN
   if (gameOver) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
@@ -194,179 +218,228 @@ export default function SignComboPage() {
     );
   }
 
-  // MAIN GAME UI
   return (
-    <div className="min-h-screen bg-white text-[#111827]">
+    <div className="h-screen bg-white text-[#111827] flex flex-col overflow-hidden">
       <Navbar active="Games" />
 
-      <main className="w-full max-w-6xl mx-auto mt-8 px-4 pb-12">
-        <div className="flex justify-between items-end mb-8 border-b pb-4 border-gray-100">
-          <div>
-            <h1 className="text-4xl font-black text-black tracking-tight">Sign Combo</h1>
-            <p className="mt-1 text-blue-600 font-bold text-sm uppercase tracking-widest">Phrase {currentIdx + 1} of 5</p>
+      {/* Main Content Area */}
+      <main className="w-full max-w-7xl mx-auto px-4 py-4 sm:py-8 flex-1 flex flex-col justify-start h-full">
+        
+        <div className="w-full flex flex-col gap-2">
+          
+          {/* Header */}
+          <div className="flex justify-between items-center shrink-0 mb-1">
+            <div>
+              <h1 className="text-xl sm:text-2xl font-black text-black tracking-tight leading-none">Sign Combo</h1>
+              <p className="text-blue-600 font-bold text-[10px] sm:text-xs uppercase tracking-widest mt-1">Phrase {currentIdx + 1} of 5</p>
+            </div>
+            <div className="flex items-center gap-3 sm:gap-6">
+              <button onClick={() => setShowInfoModal(true)} className="text-gray-400 hover:text-blue-500 transition-colors" title="Scoring & Tips">
+                <Info size={24} className="sm:w-6 sm:h-6" />
+              </button>
+              <div className="text-right">
+                <p className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase leading-none">Score</p>
+                <p className="text-xl sm:text-2xl font-black text-black leading-none mt-1">{score}</p>
+              </div>
+            </div>
           </div>
-          <div className="text-right">
-            <p className="text-xs font-bold text-gray-400 uppercase">Score</p>
-            <p className="text-3xl font-black text-black">{score}</p>
+
+          {/* --- SIDE-BY-SIDE ROW: Translation Banner & Feedback Popups --- */}
+          <div className="flex flex-row gap-2 shrink-0 items-stretch">
+
+            {/* Translation Banner */}
+            <div className="bg-blue-600 rounded-xl p-3 sm:p-4 text-white shadow-md flex-1 flex flex-col justify-center transition-all">
+              <span className="text-blue-200 text-[10px] sm:text-xs font-bold uppercase tracking-widest block mb-1">Translate this phrase:</span>
+              <h2 className="text-lg sm:text-xl font-bold leading-tight">"{gamePhrases[currentIdx].english}"</h2>
+            </div>
+
+            {/* Correct Feedback Box */}
+            {isCorrect && (
+              <div className="bg-green-500 rounded-xl flex-1 flex items-center justify-between gap-3 text-white p-3 sm:p-4 shadow-md animate-in slide-in-from-right-4 duration-300">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 size={24} />
+                  <span className="font-bold text-lg">Perfect!</span>
+                </div>
+                <button onClick={handleNextPhrase} className="bg-white text-green-600 px-4 py-2 rounded-lg font-bold hover:bg-gray-50 transition-colors flex gap-2 items-center text-sm shadow-sm shrink-0">
+                  {currentIdx === 4 ? "Finish" : "Next"} <ArrowRight size={16} />
+                </button>
+              </div>
+            )}
+
+            {/* Hint / Wrong Feedback Box */}
+            {hint && !isCorrect && (
+              <div className="bg-orange-50 border-2 border-orange-200 rounded-xl p-3 sm:p-4 flex-1 flex items-center gap-2 animate-in slide-in-from-right-4 shadow-md">
+                {!showReveal ? (
+                  <>
+                    <Lightbulb className="text-orange-500 shrink-0" size={18} />
+                    <p className="text-orange-900 font-bold text-xs sm:text-sm leading-tight flex-1 min-w-0">
+                      Hint: <span className="text-orange-800 font-normal">{hint}</span>
+                    </p>
+                    <div className="flex gap-2 shrink-0">
+                      <button onClick={() => setHint("")} className="bg-orange-500 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-orange-600 text-xs shadow-sm">
+                        Try Again
+                      </button>
+                      <button onClick={() => setShowReveal(true)} className="bg-white border border-orange-200 text-orange-700 px-3 py-1.5 rounded-lg font-bold hover:bg-orange-100 text-xs transition-colors">
+                        Reveal
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-orange-900 text-xs sm:text-sm flex-1 min-w-0 truncate">
+                      <span className="font-bold text-orange-500 uppercase text-[10px] sm:text-xs mr-1">Correct Answer:</span>
+                      <span className="font-black">{gamePhrases[currentIdx].correctOrder.map(id => signLibrary.find(s=>s.id === id)?.name).join(' + ')}</span>
+                    </p>
+                    <button onClick={handleNextPhrase} className="bg-gray-800 text-white px-4 py-1.5 rounded-lg font-bold hover:bg-black text-xs shadow-sm flex items-center gap-1 shrink-0">
+                      {currentIdx === 4 ? "Finish" : "Skip"} <ArrowRight size={12}/>
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
           </div>
-        </div>
+          {/* --- END SIDE-BY-SIDE ROW --- */}
 
-        <div className="grid lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-6">
-            
-            <div className="bg-blue-600 rounded-3xl p-8 text-white shadow-xl">
-              <span className="text-blue-200 text-sm font-bold uppercase tracking-widest">Translate this:</span>
-              <h2 className="text-3xl font-bold mt-1">"{gamePhrases[currentIdx].english}"</h2>
-            </div>
 
-            {/* FEEDBACK OVERLAY (Correct or Hint) */}
-            <div className="relative min-h-[100px] flex flex-col gap-4">
-              {isCorrect && (
-                <div className="bg-green-500 rounded-3xl flex items-center justify-between text-white p-6 animate-in zoom-in duration-300 shadow-lg">
-                  <div className="flex items-center gap-4">
-                    <CheckCircle2 size={36} />
-                    <h3 className="text-2xl font-bold">Perfect!</h3>
-                  </div>
-                  <button onClick={handleNextPhrase} className="bg-white text-green-600 px-8 py-3 rounded-xl font-bold hover:bg-gray-100 transition-colors flex gap-2 items-center shadow-sm">
-                    {currentIdx === 4 ? "Finish Game" : "Next Phrase"} <ArrowRight size={18}/>
-                  </button>
-                </div>
-              )}
+          {/* WORK AREA */}
+          <div className="bg-blue-50/50 border-2 border-dashed border-blue-200 rounded-xl p-3 min-h-[100px] flex flex-wrap gap-2 sm:gap-3 items-center justify-center transition-all shrink-0">
+            {workArea.length === 0 ? (
+              <div className="flex flex-col items-center text-blue-300">
+                <MoveHorizontal size={20} className="mb-1" />
+                <p className="font-medium text-xs">Selected signs will appear here</p>
+              </div>
+            ) : (
+              workArea.map((sign, idx) => {
+                const uniqueKey = `${sign.id}-work-${idx}`;
+                const isDragging = draggedIdx === idx;
 
-              {hint && !isCorrect && (
-                <div className="bg-orange-50 border-2 border-orange-200 rounded-3xl p-6 flex flex-col gap-4 animate-in slide-in-from-bottom-4 shadow-sm">
-                  <div className="flex gap-3 items-start">
-                    <Lightbulb className="text-orange-500 shrink-0 mt-1" />
-                    <div>
-                      <p className="text-orange-900 font-bold">Hint</p>
-                      <p className="text-orange-800 text-sm">{hint}</p>
+                return (
+                  <div
+                    key={uniqueKey}
+                    draggable
+                    onDragStart={() => handleDragStart(idx)}
+                    onDragOver={handleDragOver}
+                    onDrop={(e) => handleDrop(e, idx)}
+                    onDragEnd={handleDragEnd}
+                    className={`relative bg-white p-1 rounded-lg shadow-md border border-blue-200 overflow-hidden animate-in fade-in zoom-in duration-200 cursor-grab active:cursor-grabbing transition-all ${
+                      isDragging ? "opacity-40 scale-95" : ""
+                    }`}
+                  >
+                    {/* Sizes for the Work Area */}
+                    <div className="w-14 h-20 sm:w-16 sm:h-24 md:w-20 md:h-28 lg:w-24 lg:h-36 2xl:w-28 2xl:h-40 bg-gray-100 rounded-md overflow-hidden shrink-0">
+                       <video
+                          src={sign.videoUrl}
+                          autoPlay
+                          loop
+                          muted
+                          playsInline
+                          className="w-full h-full object-cover scale-[1] origin-center pointer-events-none"
+                        />
                     </div>
                   </div>
-                  
-                  {showReveal ? (
-                    <div className="bg-white p-4 rounded-xl border border-orange-200 shadow-inner">
-                      <p className="text-xs text-orange-500 font-bold uppercase mb-1">Correct Answer:</p>
-                      <p className="font-black text-orange-900 text-lg">
-                        {gamePhrases[currentIdx].correctOrder.map(id => signLibrary.find(s=>s.id === id)?.name).join(' + ')}
-                      </p>
-                    </div>
-                  ) : null}
+                );
+              })
+            )}
+          </div>
 
-                  <div className="flex gap-3 mt-2 border-t border-orange-200 pt-4">
-                    <button onClick={() => setHint("")} className="bg-orange-500 text-white px-6 py-2 rounded-lg font-bold hover:bg-orange-600 text-sm shadow-sm">
-                      Try Again
-                    </button>
-                    {!showReveal && (
-                      <button onClick={() => setShowReveal(true)} className="bg-white border-2 border-orange-200 text-orange-700 px-6 py-2 rounded-lg font-bold hover:bg-orange-100 text-sm transition-colors">
-                        Reveal Answer
-                      </button>
-                    )}
-                    {showReveal && (
-                      <button onClick={handleNextPhrase} className="ml-auto bg-gray-800 text-white px-6 py-2 rounded-lg font-bold hover:bg-black text-sm shadow-sm flex items-center gap-2">
-                         {currentIdx === 4 ? "Finish Game" : "Skip Phrase"} <ArrowRight size={16}/>
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* DROP ZONE (WORK AREA) */}
-            <div className="bg-blue-50/50 border-4 border-dashed border-blue-200 rounded-3xl p-6 min-h-[160px] flex flex-wrap gap-4 items-center justify-center transition-all">
-              {workArea.length === 0 ? (
-                <div className="flex flex-col items-center text-blue-300">
-                  <MoveHorizontal size={32} className="mb-2" />
-                  <p className="font-medium">Selected signs will appear here</p>
-                </div>
-              ) : (
-                workArea.map((sign, idx) => (
-                  <div key={`${sign.id}-work-${idx}`} className="relative bg-white p-1 rounded-2xl shadow-lg border border-blue-200 overflow-hidden group animate-in fade-in zoom-in duration-200">
-                    <div className="w-32 h-24 bg-gray-100 rounded-xl overflow-hidden">
-                       <iframe src={`${sign.vimeoUrl}?background=1&muted=1`} className="w-full h-full scale-150 pointer-events-none" />
-                    </div>
-                    <button 
-                      onClick={() => setWorkArea(workArea.filter((_, i) => i !== idx))} 
-                      className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
-                    >
-                      <Trash2 size={12} />
-                    </button>
-                  </div>
-                ))
-              )}
-            </div>
-
-            {/* CARD LIBRARY (THE BANK) */}
-            <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="font-bold text-gray-900 uppercase tracking-tighter">Available Signs</h3>
+          {/* CARD LIBRARY BANK */}
+          <div
+            className="relative bg-white border border-gray-100 rounded-xl p-3 sm:p-4 shadow-sm w-full shrink-0 mt-1"
+            onDragOver={(e) => { e.preventDefault(); }}
+            onDrop={() => { if (draggedIdx !== null) { setWorkArea(workArea.filter((_, i) => i !== draggedIdx)); setDraggedIdx(null); } }}
+          >
+            {draggedIdx !== null && (
+              <div className="absolute inset-0 rounded-xl flex items-center justify-center pointer-events-none z-10">
+                <span className="text-black text-3xl font-black tracking-widest">Remove Sign</span>
+              </div>
+            )}
+            <div className={`transition-opacity duration-150 ${draggedIdx !== null ? 'opacity-[0.06]' : 'opacity-100'}`}>
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="font-bold text-gray-900 uppercase tracking-tighter text-xs sm:text-sm">Available Signs</h3>
+              
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => {setWorkArea([]); setHint(""); setShowReveal(false);}}
+                  disabled={workArea.length === 0}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-gray-500 rounded-lg hover:bg-red-50 hover:text-red-500 disabled:opacity-30 transition-colors"
+                >
+                  <RefreshCcw size={14} /> <span className="hidden sm:inline">Reset</span>
+                </button>
                 <button 
                   onClick={checkPhrase} 
                   disabled={workArea.length === 0 || isCorrect || showReveal}
-                  className="bg-black text-white px-8 py-3 rounded-xl font-bold hover:bg-gray-800 disabled:opacity-30 transition-all flex items-center gap-2"
+                  className="bg-black text-white px-4 sm:px-5 py-1.5 sm:py-2 rounded-lg font-bold hover:bg-gray-800 disabled:opacity-30 transition-all flex items-center gap-1.5 text-xs sm:text-sm shadow-sm"
                 >
-                  <Play size={18} fill="currentColor" /> Check Sentence
+                  <Play size={14} fill="currentColor" /> Check
                 </button>
               </div>
-              
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4 min-h-[120px]">
-                {availableSigns.length === 0 && workArea.length > 0 ? (
-                  <p className="col-span-full text-center text-gray-400 italic py-8">All signs have been moved to the work area.</p>
-                ) : (
-                  availableSigns.map((sign) => (
+            </div>
+            
+            <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
+              {availableSigns.length === 0 && workArea.length > 0 ? (
+                <p className="w-full text-center text-gray-400 italic py-4 text-xs">All signs moved to work area.</p>
+              ) : (
+                availableSigns.map((sign) => {
+                  const uniqueKey = `${sign.id}-bank`;
+                  return (
                     <button
-                      key={`${sign.id}-bank`}
+                      key={uniqueKey}
                       onClick={() => {
                         setWorkArea([...workArea, sign]);
-                        setHint(""); // Clear hints when they make a new move
+                        setHint(""); 
                       }}
-                      className="aspect-[3/4] bg-gray-50 border border-gray-200 rounded-2xl overflow-hidden hover:border-blue-400 hover:shadow-md transition-all active:scale-95 group animate-in fade-in duration-300"
+                      // Sizes for the Bank Area
+                      className="h-24 sm:h-28 md:h-32 lg:h-36 xl:h-48 2xl:h-56 aspect-[3/4] bg-gray-50 border border-gray-200 rounded-xl overflow-hidden hover:border-blue-400 hover:shadow-md transition-all active:scale-95 group animate-in fade-in duration-300 relative shrink-0"
                     >
-                      <div className="w-full h-full pointer-events-none">
-                          <iframe src={`${sign.vimeoUrl}?background=1&muted=1`} className="w-full h-full scale-[1.8]" />
+                      <div className="w-full h-full pointer-events-none bg-slate-900">
+                          <video 
+                            src={sign.videoUrl}
+                            autoPlay
+                            loop
+                            muted
+                            playsInline 
+                            className="w-full h-full object-cover scale-[1] origin-center" 
+                          />
                       </div>
                     </button>
-                  ))
-                )}
+                  );
+                })
+              )}
+            </div>
+            </div>
+          </div>
+
+        </div>
+      </main>
+
+      {/* --- INFO MODAL (Grammar & Scoring) --- */}
+      {showInfoModal && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={() => setShowInfoModal(false)}
+        >
+          <div className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl relative" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setShowInfoModal(false)} className="absolute top-4 right-4 rounded-full bg-slate-100 p-1.5 text-slate-500 hover:bg-slate-200 hover:text-slate-900"><X size={18}/></button>
+            <div className="p-6 space-y-6">
+              <div>
+                <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2 text-lg"><Trophy size={18} className="text-yellow-500" /> Scoring Guide</h3>
+                <ul className="text-xs text-gray-600 leading-relaxed space-y-2 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                  <li className="flex justify-between border-b border-gray-200 pb-1.5"><span>Perfect Match:</span> <strong className="text-blue-600">150 pts</strong></li>
+                  <li className="flex justify-between border-b border-gray-200 pb-1.5"><span>Right Signs, Wrong Order:</span> <strong className="text-blue-600">100 pts</strong></li>
+                  <li className="flex justify-between"><span>Partial Match:</span> <strong className="text-blue-600">15 pts / sign</strong></li>
+                </ul>
+              </div>
+              <div>
+                <h3 className="font-bold text-blue-900 mb-3 flex items-center gap-2 text-lg"><BookOpen size={18} className="text-blue-600" /> ASL Grammar Tips</h3>
+                <ul className="text-xs text-blue-800 leading-relaxed space-y-2 bg-blue-50 p-4 rounded-xl border border-blue-100 list-disc pl-6 marker:text-blue-400">
+                  <li><strong>Time First:</strong> Always place time words (NOW, YESTERDAY, TOMORROW) at the very beginning of your sentence.</li>
+                  <li><strong>Drop the Extras:</strong> ASL doesn't use words like "am," "is," "are," "the," or "to." Just stick to the core signs!</li>
+                </ul>
               </div>
             </div>
           </div>
-
-          {/* SIDEBAR */}
-          <div className="space-y-6">
-            <div className="bg-gray-50 border border-gray-200 rounded-3xl p-6">
-              <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2 text-lg">
-                <BookOpen size={20} className="text-blue-500" />
-                Scoring Guide
-              </h3>
-              <ul className="text-sm text-gray-600 leading-relaxed space-y-3">
-                <li className="flex justify-between border-b pb-2"><span>Perfect Match:</span> <strong className="text-blue-600">150 pts</strong></li>
-                <li className="flex justify-between border-b pb-2"><span>Right Signs, Wrong Order:</span> <strong className="text-blue-600">100 pts</strong></li>
-                <li className="flex justify-between border-b pb-2"><span>Partial Match:</span> <strong className="text-blue-600">15 pts / sign</strong></li>
-              </ul>
-              <p className="text-xs text-gray-400 mt-4 italic">Points are awarded on your first check. Use hints to learn without losing points!</p>
-            </div>
-
-            {/* GRAMMAR TIPS */}
-            <div className="bg-blue-50 border border-blue-100 rounded-3xl p-6 shadow-sm">
-              <h3 className="font-bold text-blue-900 mb-4 flex items-center gap-2 text-lg">
-                <BookOpen size={20} className="text-blue-600" />
-                ASL Grammar Tips
-              </h3>
-              <ul className="text-sm text-blue-800 leading-relaxed space-y-3 list-disc pl-4 marker:text-blue-400">
-                <li><strong>Time First:</strong> Always place time words (NOW, YESTERDAY, TOMORROW) at the very beginning of your sentence.</li>
-                <li><strong>Drop the Extras:</strong> ASL doesn't use words like "am," "is," "are," "the," or "to." Just stick to the core signs!</li>
-              </ul>
-            </div>
-            
-            <button 
-              onClick={() => {setWorkArea([]); setHint(""); setShowReveal(false);}}
-              className="w-full flex items-center justify-center gap-2 py-4 text-gray-400 hover:text-red-500 font-medium transition-colors"
-            >
-              <RefreshCcw size={18} /> Reset Signs
-            </button>
-          </div>
         </div>
-      </main>
+      )}
     </div>
   );
 }
