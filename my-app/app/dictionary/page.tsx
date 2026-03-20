@@ -133,14 +133,14 @@ export default function DictionaryPage() {
     <div className="min-h-screen bg-white">
       <Navbar active="Dictionary" />
 
-      <main className="w-full max-w-6xl mx-auto mt-8 px-4 pb-12">
+      <main className="max-w-7xl mx-auto px-4 py-4">
         {/* Header */}
-        <section>
-          <h1 className="text-4xl font-black text-slate-900 tracking-tight">ASL Dictionary</h1>
-          <p className="mt-2 text-lg text-slate-600">
+        <div className="mb-4">
+          <h1 className="text-3xl font-bold text-gray-900 mb-1">ASL Dictionary</h1>
+          <p className="text-gray-600">
             Browse and learn over 100 core ASL signs, including the full alphabet.
           </p>
-        </section>
+        </div>
 
         {/* Search Bar */}
         <section className="mt-8 relative">
