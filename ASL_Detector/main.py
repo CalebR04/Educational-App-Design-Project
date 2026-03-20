@@ -30,10 +30,10 @@ torchvision.ops.nms = cpu_nms
 # Config
 BASE_DIR = Path(__file__).resolve().parent
 
-MODEL_PATH = BASE_DIR / "asl_yolo" / "runs" / "asl_yolo11" / "weights" / "best.pt"
+MODEL_PATH = BASE_DIR / "asl_yolo_roboflow" / "runs" / "asl_roboflow2" / "weights" / "best.pt"
 MEDIAPIPE_MODEL_PATH = BASE_DIR / "hand_landmarker.task"
 
-CONF_THRESHOLD = 0.6
+CONF_THRESHOLD = 0.65
 HOLD_FRAMES = 15
 
 IDX_TO_CLASS = {i: chr(65 + i) for i in range(26)}
