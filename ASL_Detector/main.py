@@ -26,16 +26,15 @@ def cpu_nms(boxes, scores, iou_threshold):
 torchvision.ops.nms = cpu_nms
 
 
-#----
+# ----
 # Config
-MODEL_PATH = Path(
-    "C:/Users/Adam/Desktop/New folder/School/Educational_App_Development/asl_yolo/runs/asl_yolo11/weights/best.pt"
-)
-MEDIAPIPE_MODEL_PATH = Path(
-    "C:/Users/Adam/Desktop/New folder/School/Educational_App_Development/hand_landmarker.task"
-)
-CONF_THRESHOLD = 0.5
-HOLD_FRAMES    = 15
+BASE_DIR = Path(__file__).resolve().parent
+
+MODEL_PATH = BASE_DIR / "asl_yolo" / "runs" / "asl_yolo11" / "weights" / "best.pt"
+MEDIAPIPE_MODEL_PATH = BASE_DIR / "hand_landmarker.task"
+
+CONF_THRESHOLD = 0.6
+HOLD_FRAMES = 15
 
 IDX_TO_CLASS = {i: chr(65 + i) for i in range(26)}
 
