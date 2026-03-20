@@ -101,11 +101,12 @@ echo Writing server scripts...
 ) > "%RUNTIME%\start_backend.bat"
 
 (
-echo @echo off                                         > "%RUNTIME%\start_frontend.bat"
-echo set "PATH=%NODE_DIR%;%%PATH%%"                    >> "%RUNTIME%\start_frontend.bat"
-echo cd /d "%ROOT%my-app"                              >> "%RUNTIME%\start_frontend.bat"
-echo call "%NODE_DIR%\npm.cmd" run dev                 >> "%RUNTIME%\start_frontend.bat"
-echo pause                                             >> "%RUNTIME%\start_frontend.bat"
+    echo @echo off
+    echo title SignQuest Frontend
+    echo set "PATH=%NODE_DIR%;%%PATH%%"
+    echo cd /d "%FRONTEND%"
+    echo call "%NODE_DIR%\npm.cmd" run dev
+    echo pause
 ) > "%RUNTIME%\start_frontend.bat"
 
 echo     Scripts written.
