@@ -26,15 +26,13 @@ REM ── Python portable runtime ───────────────
 if not exist "%PY%" (
     echo [1/4] Downloading Python %PY_VER% portable...
     powershell -NoProfile -Command "$ProgressPreference='SilentlyContinue'; Invoke-WebRequest -Uri '%PY_URL%' -OutFile '%RUNTIME%\python.zip'"
-    if errorlevel 1 ( echo ERROR: Could not download Python. Check your internet connection. & pause & exit /b 1 )
+    if errorlevel 1 goto :err_python_download
 
     powershell -NoProfile -Command "$ProgressPreference='SilentlyContinue'; Expand-Archive -Path '%RUNTIME%\python.zip' -DestinationPath '%PY_DIR%' -Force"
     del "%RUNTIME%\python.zip"
 
-    REM Enable site-packages so pip and installed packages are importable
     powershell -NoProfile -Command "Get-ChildItem '%PY_DIR%' -Filter '*._pth' | ForEach-Object { (Get-Content $_.FullName) -replace '#import site','import site' | Set-Content $_.FullName }"
 
-    REM Bootstrap pip into the embedded Python
     powershell -NoProfile -Command "$ProgressPreference='SilentlyContinue'; Invoke-WebRequest -Uri '%PIP_URL%' -OutFile '%PY_DIR%\get-pip.py'"
     "%PY%" "%PY_DIR%\get-pip.py" --quiet
     del "%PY_DIR%\get-pip.py"
@@ -48,7 +46,7 @@ REM ── Node.js portable runtime ──────────────�
 if not exist "%NODE_DIR%\node.exe" (
     echo [2/4] Downloading Node.js %NODE_VER% portable...
     powershell -NoProfile -Command "$ProgressPreference='SilentlyContinue'; Invoke-WebRequest -Uri '%NODE_URL%' -OutFile '%RUNTIME%\node.zip'"
-    if errorlevel 1 ( echo ERROR: Could not download Node.js. Check your internet connection. & pause & exit /b 1 )
+    if errorlevel 1 goto :err_node_download
 
     powershell -NoProfile -Command "$ProgressPreference='SilentlyContinue'; Expand-Archive -Path '%RUNTIME%\node.zip' -DestinationPath '%RUNTIME%\node_tmp' -Force"
     powershell -NoProfile -Command "Move-Item '%RUNTIME%\node_tmp\node-v%NODE_VER%-win-x64' '%NODE_DIR%'"
@@ -62,24 +60,34 @@ echo.
 
 REM ── Python packages ──────────────────────────
 echo [3/4] Installing Python packages (first run may take several minutes)...
-"%PIP%" install -r "%ROOT%ASL_Detector\requirements.txt" --quiet
-if errorlevel 1 ( echo ERROR: Failed to install Python packages. & pause & exit /b 1 )
+"%PIP%" install -r "%ROOT%ASL_Detector\requirements.txt"
+if errorlevel 1 goto :err_pip
 echo    Done.
 echo.
 
 REM ── Node.js packages ─────────────────────────
 echo [4/4] Installing Node.js packages...
 cd /d "%ROOT%my-app"
-"%NODE_DIR%\npm.cmd" install --silent
-if errorlevel 1 ( echo ERROR: Failed to install Node.js packages. & pause & exit /b 1 )
+"%NODE_DIR%\npm.cmd" install
+if errorlevel 1 goto :err_npm
 echo    Done.
 echo.
 
+REM ── Write server launcher scripts ────────────
+echo @echo off                                          > "%RUNTIME%\start_backend.bat"
+echo cd /d "%ROOT%ASL_Detector"                        >> "%RUNTIME%\start_backend.bat"
+echo "%PY%" -m uvicorn main:app --host 0.0.0.0 --port 8000 >> "%RUNTIME%\start_backend.bat"
+echo pause                                             >> "%RUNTIME%\start_backend.bat"
+
+echo @echo off                                         > "%RUNTIME%\start_frontend.bat"
+echo cd /d "%ROOT%my-app"                              >> "%RUNTIME%\start_frontend.bat"
+echo "%NODE_DIR%\npm.cmd" run dev                      >> "%RUNTIME%\start_frontend.bat"
+echo pause                                             >> "%RUNTIME%\start_frontend.bat"
+
 REM ── Launch both servers ──────────────────────
 echo Starting servers...
-
-start "ASL Detector Backend" cmd /k "cd /d "%ROOT%ASL_Detector" && "%PY%" -m uvicorn main:app --host 0.0.0.0 --port 8000"
-start "SignQuest Frontend"   cmd /k "cd /d "%ROOT%my-app" && "%NODE_DIR%\npm.cmd" run dev"
+start "ASL Detector Backend" "%RUNTIME%\start_backend.bat"
+start "SignQuest Frontend"   "%RUNTIME%\start_frontend.bat"
 
 echo Waiting for servers to start...
 timeout /t 12 /nobreak >nul
@@ -93,4 +101,29 @@ echo   Backend  : http://localhost:8000
 echo ============================================
 echo.
 echo Close the server windows to stop the servers.
-pause >nul
+pause
+goto :eof
+
+:err_python_download
+echo.
+echo ERROR: Could not download Python. Check your internet connection.
+pause
+exit /b 1
+
+:err_node_download
+echo.
+echo ERROR: Could not download Node.js. Check your internet connection.
+pause
+exit /b 1
+
+:err_pip
+echo.
+echo ERROR: Failed to install Python packages.
+pause
+exit /b 1
+
+:err_npm
+echo.
+echo ERROR: Failed to install Node.js packages.
+pause
+exit /b 1
