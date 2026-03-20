@@ -192,27 +192,27 @@ export default function SignComboPage() {
 
   if (gameOver) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
-        <Trophy size={80} className="text-yellow-500 mb-6 animate-bounce" />
-        <h1 className="text-5xl font-black text-black mb-2">Game Complete!</h1>
+      <div className="h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
+        <Trophy size={48} className="text-yellow-500 mb-3 animate-bounce" />
+        <h1 className="text-3xl font-black text-black mb-1">Game Complete!</h1>
         {score > highScore && score > 0 ? (
-          <p className="text-green-600 font-bold text-2xl mb-6">🎉 NEW HIGH SCORE! 🎉</p>
+          <p className="text-green-600 font-bold text-lg mb-4">🎉 NEW HIGH SCORE! 🎉</p>
         ) : (
-          <p className="text-gray-500 font-bold text-xl mb-6">Great practice!</p>
+          <p className="text-gray-500 font-bold text-base mb-4">Great practice!</p>
         )}
-        
-        <div className="bg-white rounded-3xl p-8 shadow-xl mb-8 w-full max-w-md border border-gray-100 text-center">
-          <p className="text-gray-400 uppercase text-sm font-bold tracking-widest mb-2">Final Score</p>
-          <p className="text-7xl font-black text-blue-600 mb-8">{score}</p>
-          <div className="flex justify-between border-t border-gray-100 pt-6">
-            <div><p className="text-xs text-gray-400 font-bold">HIGH SCORE</p><p className="font-black text-xl">{Math.max(score, highScore)}</p></div>
-            <div><p className="text-xs text-gray-400 font-bold">GAMES PLAYED</p><p className="font-black text-xl">{gamesPlayed}</p></div>
+
+        <div className="bg-white rounded-2xl p-5 shadow-xl mb-5 w-full max-w-sm border border-gray-100 text-center">
+          <p className="text-gray-400 uppercase text-xs font-bold tracking-widest mb-1">Final Score</p>
+          <p className="text-5xl font-black text-blue-600 mb-4">{score}</p>
+          <div className="flex justify-between border-t border-gray-100 pt-4">
+            <div><p className="text-xs text-gray-400 font-bold">HIGH SCORE</p><p className="font-black text-lg">{Math.max(score, highScore)}</p></div>
+            <div><p className="text-xs text-gray-400 font-bold">GAMES PLAYED</p><p className="font-black text-lg">{gamesPlayed}</p></div>
           </div>
         </div>
 
-        <div className="flex gap-4">
-          <button onClick={startNewGame} className="bg-blue-600 text-white px-8 py-4 rounded-2xl font-bold shadow-lg hover:bg-blue-700 transition-colors">Play Again</button>
-          <button onClick={() => setShowExitConfirm(true)} className="bg-white text-gray-800 border-2 border-gray-200 px-8 py-4 rounded-2xl font-bold hover:bg-gray-50 transition-colors">Exit to Games</button>
+        <div className="flex gap-3">
+          <button onClick={startNewGame} className="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:bg-blue-700 transition-colors">Play Again</button>
+          <button onClick={() => window.location.href = '/games'} className="bg-white text-gray-800 border-2 border-gray-200 px-6 py-3 rounded-xl font-bold hover:bg-gray-50 transition-colors">Exit to Games</button>
         </div>
       </div>
     );
