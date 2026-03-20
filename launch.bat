@@ -78,10 +78,14 @@ echo.
 
 REM ── Node.js packages ─────────────────────────
 echo [4/4] Installing Node.js packages...
-cd /d "%FRONTEND%"
+cd /d "%ROOT%my-app"
+
+REM Temporarily add portable node to PATH so post-install scripts can find it
+set "PATH=%NODE_DIR%;%PATH%"
+
 call "%NODE_DIR%\npm.cmd" install
 if errorlevel 1 goto :err_npm
-echo     Done.
+echo    Done.
 echo.
 
 REM ── Write server launcher scripts ────────────
@@ -97,12 +101,11 @@ echo Writing server scripts...
 ) > "%RUNTIME%\start_backend.bat"
 
 (
-    echo @echo off
-    echo title SignQuest Frontend
-    echo cd /d "%FRONTEND%"
-    echo echo Starting SignQuest frontend...
-    echo call "%NODE_DIR%\npm.cmd" run dev
-    echo pause
+echo @echo off                                         > "%RUNTIME%\start_frontend.bat"
+echo set "PATH=%NODE_DIR%;%%PATH%%"                    >> "%RUNTIME%\start_frontend.bat"
+echo cd /d "%ROOT%my-app"                              >> "%RUNTIME%\start_frontend.bat"
+echo call "%NODE_DIR%\npm.cmd" run dev                 >> "%RUNTIME%\start_frontend.bat"
+echo pause                                             >> "%RUNTIME%\start_frontend.bat"
 ) > "%RUNTIME%\start_frontend.bat"
 
 echo     Scripts written.
