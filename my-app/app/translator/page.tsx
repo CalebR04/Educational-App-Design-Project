@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Navbar from "../../components/Navbar";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-const CAPTURE_INTERVAL = 100;
+const CAPTURE_INTERVAL = 500;
 
 export default function TranslatorPage() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -12,7 +12,8 @@ export default function TranslatorPage() {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastLetterRef = useRef<string | null>(null);
   const holdCountRef = useRef(0);
-  const HOLD_FRAMES = 15;
+  const requestInFlightRef = useRef(false);
+  const HOLD_FRAMES = 3;
 
   const [cameraOn, setCameraOn] = useState(false);
   const [error, setError] = useState("");
@@ -29,17 +30,23 @@ export default function TranslatorPage() {
       !video ||
       video.readyState < 2 ||
       !video.videoWidth ||
-      !video.videoHeight
+      !video.videoHeight ||
+      requestInFlightRef.current
     ) {
       return;
     }
+
+    requestInFlightRef.current = true;
 
     const offscreen = document.createElement("canvas");
     offscreen.width = video.videoWidth;
     offscreen.height = video.videoHeight;
 
     const ctx = offscreen.getContext("2d");
-    if (!ctx) return;
+    if (!ctx) {
+      requestInFlightRef.current = false;
+      return;
+    }
 
     ctx.drawImage(video, 0, 0);
 
@@ -52,13 +59,17 @@ export default function TranslatorPage() {
         body: JSON.stringify({ image: b64 }),
       });
 
-      if (!res.ok) return;
+      if (!res.ok) {
+        console.error("Detect request failed:", res.status, res.statusText);
+        return;
+      }
 
       const data = await res.json();
+      console.log("detect response:", data);
 
-      setLetter(data.letter);
-      setConfidence(data.confidence);
-      setWord(data.word);
+      setLetter(data.letter ?? null);
+      setConfidence(data.confidence ?? null);
+      setWord(data.word ?? "");
 
       if (data.letter) {
         if (data.letter === lastLetterRef.current) {
@@ -67,17 +78,20 @@ export default function TranslatorPage() {
             HOLD_FRAMES
           );
         } else {
-          holdCountRef.current = 0;
+          holdCountRef.current = 1;
           lastLetterRef.current = data.letter;
         }
 
         setHoldProgress(holdCountRef.current / HOLD_FRAMES);
       } else {
         holdCountRef.current = 0;
+        lastLetterRef.current = null;
         setHoldProgress(0);
       }
     } catch (err) {
-      console.error(err);
+      console.error("Detect error:", err);
+    } finally {
+      requestInFlightRef.current = false;
     }
   }, []);
 
@@ -135,6 +149,7 @@ export default function TranslatorPage() {
       intervalRef.current = null;
     }
 
+    requestInFlightRef.current = false;
     setDetecting(false);
     setLetter(null);
     setConfidence(null);
@@ -181,6 +196,7 @@ export default function TranslatorPage() {
       intervalRef.current = null;
     }
 
+    requestInFlightRef.current = false;
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
 
@@ -200,6 +216,7 @@ export default function TranslatorPage() {
 
   useEffect(() => {
     return () => {
+      requestInFlightRef.current = false;
       streamRef.current?.getTracks().forEach((track) => track.stop());
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
