@@ -213,12 +213,20 @@ export default function MemoryGame() {
             >
               <h2 className="text-2xl font-bold text-red-600">Game Over!</h2>
               <p className="mt-2 text-black text-center">You ran out of moves.</p>
-              <button
-                onClick={restartGame}
-                className="mt-4 px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600"
-              >
-                Start Over
-              </button>
+              <div className="flex gap-3 mt-4">
+                <button
+                  onClick={restartGame}
+                  className="px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600"
+                >
+                  Play Again
+                </button>
+                <button
+                  onClick={() => (window.location.href = "/games")}
+                  className="px-6 py-3 bg-white border-2 border-red-300 text-red-600 rounded-lg hover:bg-red-50"
+                >
+                  Exit
+                </button>
+              </div>
             </div>
           )}
         </div>
