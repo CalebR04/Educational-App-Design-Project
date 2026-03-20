@@ -5,7 +5,7 @@ import { Info } from "lucide-react";
 import Navbar from "../../components/Navbar";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-const CAPTURE_INTERVAL = 500;
+const CAPTURE_INTERVAL = 100;
 
 export default function TranslatorPage() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -14,7 +14,7 @@ export default function TranslatorPage() {
   const lastLetterRef = useRef<string | null>(null);
   const holdCountRef = useRef(0);
   const requestInFlightRef = useRef(false);
-  const HOLD_FRAMES = 3;
+  const HOLD_FRAMES = 15;
 
   const [cameraOn, setCameraOn] = useState(false);
   const [error, setError] = useState("");
