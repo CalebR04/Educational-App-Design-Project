@@ -60,7 +60,7 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:3000",
         "http://127.0.0.1:3000",
-        "https://educational-app-design-project.vercel.app",
+        "https://signquestv2.vercel.app",  # NEW DOMAIN
     ],
     allow_credentials=True,
     allow_methods=["*"],
