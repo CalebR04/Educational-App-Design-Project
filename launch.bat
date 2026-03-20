@@ -25,17 +25,17 @@ echo.
 REM ── Python portable runtime ─────────────────
 if not exist "%PY%" (
     echo [1/4] Downloading Python %PY_VER% portable...
-    powershell -NoProfile -Command "$ProgressPreference='SilentlyContinue'; Invoke-WebRequest -Uri $env:PY_URL -OutFile '$env:RUNTIME\python.zip'"
+    powershell -NoProfile -Command "$ProgressPreference='SilentlyContinue'; Invoke-WebRequest -Uri '%PY_URL%' -OutFile '%RUNTIME%\python.zip'"
     if errorlevel 1 ( echo ERROR: Could not download Python. Check your internet connection. & pause & exit /b 1 )
 
-    powershell -NoProfile -Command "Expand-Archive -Path '$env:RUNTIME\python.zip' -DestinationPath $env:PY_DIR -Force"
+    powershell -NoProfile -Command "$ProgressPreference='SilentlyContinue'; Expand-Archive -Path '%RUNTIME%\python.zip' -DestinationPath '%PY_DIR%' -Force"
     del "%RUNTIME%\python.zip"
 
     REM Enable site-packages so pip and installed packages are importable
-    powershell -NoProfile -Command "Get-ChildItem $env:PY_DIR -Filter '*._pth' | ForEach-Object { (Get-Content $_.FullName) -replace '#import site','import site' | Set-Content $_.FullName }"
+    powershell -NoProfile -Command "Get-ChildItem '%PY_DIR%' -Filter '*._pth' | ForEach-Object { (Get-Content $_.FullName) -replace '#import site','import site' | Set-Content $_.FullName }"
 
     REM Bootstrap pip into the embedded Python
-    powershell -NoProfile -Command "$ProgressPreference='SilentlyContinue'; Invoke-WebRequest -Uri $env:PIP_URL -OutFile '$env:PY_DIR\get-pip.py'"
+    powershell -NoProfile -Command "$ProgressPreference='SilentlyContinue'; Invoke-WebRequest -Uri '%PIP_URL%' -OutFile '%PY_DIR%\get-pip.py'"
     "%PY%" "%PY_DIR%\get-pip.py" --quiet
     del "%PY_DIR%\get-pip.py"
     echo    Python ready.
@@ -47,11 +47,11 @@ echo.
 REM ── Node.js portable runtime ─────────────────
 if not exist "%NODE_DIR%\node.exe" (
     echo [2/4] Downloading Node.js %NODE_VER% portable...
-    powershell -NoProfile -Command "$ProgressPreference='SilentlyContinue'; Invoke-WebRequest -Uri $env:NODE_URL -OutFile '$env:RUNTIME\node.zip'"
+    powershell -NoProfile -Command "$ProgressPreference='SilentlyContinue'; Invoke-WebRequest -Uri '%NODE_URL%' -OutFile '%RUNTIME%\node.zip'"
     if errorlevel 1 ( echo ERROR: Could not download Node.js. Check your internet connection. & pause & exit /b 1 )
 
-    powershell -NoProfile -Command "Expand-Archive -Path '$env:RUNTIME\node.zip' -DestinationPath '$env:RUNTIME\node_tmp' -Force"
-    powershell -NoProfile -Command "Move-Item '$env:RUNTIME\node_tmp\node-v%NODE_VER%-win-x64' $env:NODE_DIR"
+    powershell -NoProfile -Command "$ProgressPreference='SilentlyContinue'; Expand-Archive -Path '%RUNTIME%\node.zip' -DestinationPath '%RUNTIME%\node_tmp' -Force"
+    powershell -NoProfile -Command "Move-Item '%RUNTIME%\node_tmp\node-v%NODE_VER%-win-x64' '%NODE_DIR%'"
     rmdir /s /q "%RUNTIME%\node_tmp" 2>nul
     del "%RUNTIME%\node.zip"
     echo    Node.js ready.
@@ -81,7 +81,7 @@ echo Starting servers...
 start "ASL Detector Backend" cmd /k "cd /d "%ROOT%ASL_Detector" && "%PY%" -m uvicorn main:app --host 0.0.0.0 --port 8000"
 start "SignQuest Frontend"   cmd /k "cd /d "%ROOT%my-app" && "%NODE_DIR%\npm.cmd" run dev"
 
-echo Waiting for servers to initialise...
+echo Waiting for servers to start...
 timeout /t 12 /nobreak >nul
 start http://localhost:3000
 
