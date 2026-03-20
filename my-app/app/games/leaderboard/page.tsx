@@ -32,20 +32,20 @@ export default function LeaderboardPage() {
     <div className="min-h-screen bg-white">
       <Navbar active="Games" />
 
-      <main className="max-w-7xl mx-auto px-4 py-8">
+      <main className="max-w-7xl mx-auto px-4 py-4">
 
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Leaderboard</h1>
+        <div className="mb-4">
+          <h1 className="text-3xl font-bold text-gray-900 mb-1">Leaderboard</h1>
           <p className="text-gray-600">Compete with learners from around the world</p>
         </div>
 
         {/* Nav Tabs */}
-        <div className="flex gap-2 mb-8 border-b-2 border-gray-200">
-          <Link href="/games" className="px-6 py-3 font-bold text-lg text-gray-600 hover:text-gray-900 transition-all">
+        <div className="flex gap-2 mb-4 border-b-2 border-gray-200">
+          <Link href="/games" className="px-6 py-2 font-bold text-lg text-gray-600 hover:text-gray-900 transition-all">
             Games
           </Link>
-          <span className="px-6 py-3 font-bold text-lg text-blue-600 relative">
+          <span className="px-6 py-2 font-bold text-lg text-blue-600 relative">
             Leaderboard
             <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600" />
           </span>

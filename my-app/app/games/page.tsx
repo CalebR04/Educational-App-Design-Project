@@ -66,17 +66,17 @@ export default function GamesPage() {
     <div className="min-h-screen bg-white">
       <Navbar active="Games" />
 
-      <main className="max-w-7xl mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Game Center</h1>
+      <main className="max-w-7xl mx-auto px-4 py-4">
+        <div className="mb-4">
+          <h1 className="text-3xl font-bold text-gray-900 mb-1">Game Center</h1>
           <p className="text-gray-600">
             Play games and compete with learners worldwide
           </p>
         </div>
 
-        <div className="flex gap-2 mb-8 border-b-2 border-gray-200">
+        <div className="flex gap-2 mb-4 border-b-2 border-gray-200">
           <button
-            className={`px-6 py-3 font-bold text-lg transition-all relative ${
+            className={`px-6 py-2 font-bold text-lg transition-all relative ${
               activeTab === "Games" ? "text-blue-600" : "text-gray-600 hover:text-gray-900"
             }`}
           >
@@ -88,20 +88,20 @@ export default function GamesPage() {
 
           <Link
             href="/games/leaderboard"
-            className="px-6 py-3 font-bold text-lg text-gray-600 hover:text-gray-900 transition-all"
+            className="px-6 py-2 font-bold text-lg text-gray-600 hover:text-gray-900 transition-all"
           >
             Leaderboard
           </Link>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6 mb-12">
+        <div className="grid md:grid-cols-3 gap-6">
           {games.map((game) => {
             const inner = (
               <>
-                <div className={`flex-1 bg-linear-to-br ${game.gradient} p-8 text-white`}>
-                  <div className="text-4xl mb-4">{game.icon}</div>
-                  <h2 className="text-2xl font-bold mb-2">{game.title}</h2>
-                  <p className="text-white/90 text-sm mb-4">{game.description}</p>
+                <div className={`flex-1 bg-linear-to-br ${game.gradient} p-6 text-white`}>
+                  <div className="text-3xl mb-3">{game.icon}</div>
+                  <h2 className="text-xl font-bold mb-2">{game.title}</h2>
+                  <p className="text-white/90 text-sm mb-3">{game.description}</p>
                   <div className="flex items-center gap-3">
                     <div className="inline-flex bg-white/20 backdrop-blur px-3 py-1 rounded-full text-sm font-semibold">
                       {game.difficulty}
@@ -113,7 +113,7 @@ export default function GamesPage() {
                     )}
                   </div>
                 </div>
-                <div className="p-6 grid grid-cols-2 gap-4">
+                <div className="p-4 grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-2xl font-bold text-gray-900">{game.plays}</p>
                     <p className="text-xs text-gray-600">Games Played</p>

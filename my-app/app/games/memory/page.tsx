@@ -141,37 +141,39 @@ export default function MemoryGame() {
 
   return (
     <div className="min-h-screen bg-white">
-      <div className="flex justify-end px-6 pt-4">
-        <button
-          onClick={() => setShowExitConfirm(true)}
-          className="flex items-center gap-2 text-red-500 hover:text-red-600 font-bold transition"
-        >
-          <LogOut className="w-5 h-5" />
-          Exit Game
-        </button>
-      </div>
+      <main className="max-w-6xl mx-auto px-4 py-3">
+        {/* Header row: title + stats + exit */}
+        <div className="flex items-center gap-4 mb-3">
+          <div className="flex-1">
+            <h1 className="text-2xl font-bold text-black leading-tight">Sign Memory</h1>
+            <p className="text-black text-sm">Match the ASL sign to the corresponding letter!</p>
+          </div>
 
-      <main className="max-w-6xl mx-auto mt-4 px-4">
-        {/* Title */}
-        <h1 className="text-3xl font-bold text-black">Sign Memory</h1>
-        <p className="text-black mt-1">Match the ASL sign to the corresponding letter!</p>
+          <div className="flex gap-3 shrink-0">
+            <div className="flex items-center bg-white border-2 border-gray-200 rounded-xl px-3 py-2 gap-2">
+              <div className="w-3 h-3 bg-blue-500 rounded-sm shrink-0"></div>
+              <div className="font-semibold text-black text-sm whitespace-nowrap">Moves: {moves}</div>
+            </div>
+            <div className="flex items-center bg-white border-2 border-gray-200 rounded-xl px-3 py-2 gap-2">
+              <div className="w-3 h-3 bg-green-500 rounded-sm shrink-0"></div>
+              <div className="font-semibold text-black text-sm whitespace-nowrap">Score: {score}</div>
+            </div>
+            <div className="flex items-center bg-white border-2 border-gray-200 rounded-xl px-3 py-2 gap-2">
+              <div className="w-3 h-3 bg-yellow-500 rounded-sm shrink-0"></div>
+              <div className="font-semibold text-black text-sm whitespace-nowrap">High Score: {highScore}</div>
+            </div>
+          </div>
 
-        <div className="mt-6 flex gap-4 flex-wrap justify-center">
-          <div className="flex items-center bg-white border-2 border-gray-200 rounded-xl px-6 py-4 flex-1 max-w-[300px] justify-center gap-3">
-            <div className="w-4 h-4 bg-blue-500 rounded-sm"></div>
-            <div className="font-semibold text-black text-center">Moves: {moves}</div>
-          </div>
-          <div className="flex items-center bg-white border-2 border-gray-200 rounded-xl px-6 py-4 flex-1 max-w-[300px] justify-center gap-3">
-            <div className="w-4 h-4 bg-green-500 rounded-sm"></div>
-            <div className="font-semibold text-black text-center">Score: {score}</div>
-          </div>
-          <div className="flex items-center bg-white border-2 border-gray-200 rounded-xl px-6 py-4 flex-1 max-w-[300px] justify-center gap-3">
-            <div className="w-4 h-4 bg-yellow-500 rounded-sm"></div>
-            <div className="font-semibold text-black text-center">High Score: {highScore}</div>
-          </div>
+          <button
+            onClick={() => setShowExitConfirm(true)}
+            className="flex items-center gap-2 text-red-500 hover:text-red-600 font-bold transition shrink-0"
+          >
+            <LogOut className="w-5 h-5" />
+            Exit Game
+          </button>
         </div>
 
-        <div className="mt-6 relative bg-white border-2 border-gray-200 rounded-xl p-6">
+        <div className="relative bg-white border-2 border-gray-200 rounded-xl p-6">
           <div className="grid grid-cols-6 gap-4 justify-items-center">
             {cards.map((card, index) => {
               const isMatched = card.matched;
