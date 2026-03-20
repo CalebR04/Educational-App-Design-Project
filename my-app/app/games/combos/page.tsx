@@ -220,21 +220,11 @@ export default function SignComboPage() {
 
   return (
     <div className="h-screen bg-white text-[#111827] flex flex-col overflow-hidden">
-      <div className="flex justify-end px-6 pt-4 shrink-0">
-        <button
-          onClick={() => setShowExitConfirm(true)}
-          className="flex items-center gap-2 text-red-500 hover:text-red-600 font-bold transition"
-        >
-          <LogOut className="w-5 h-5" />
-          Exit Game
-        </button>
-      </div>
-
       {/* Main Content Area */}
-      <main className="w-full max-w-7xl mx-auto px-4 py-4 sm:py-8 flex-1 flex flex-col justify-start h-full">
-        
+      <main className="w-full max-w-7xl mx-auto px-4 py-2 flex-1 flex flex-col justify-start h-full">
+
         <div className="w-full flex flex-col gap-2">
-          
+
           {/* Header */}
           <div className="flex justify-between items-center shrink-0 mb-1">
             <div>
@@ -242,13 +232,21 @@ export default function SignComboPage() {
               <p className="text-blue-600 font-bold text-[10px] sm:text-xs uppercase tracking-widest mt-1">Phrase {currentIdx + 1} of 5</p>
             </div>
             <div className="flex items-center gap-3 sm:gap-6">
-              <button onClick={() => setShowInfoModal(true)} className="text-gray-400 hover:text-blue-500 transition-colors" title="Scoring & Tips">
-                <Info size={24} className="sm:w-6 sm:h-6" />
-              </button>
               <div className="text-right">
                 <p className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase leading-none">Score</p>
                 <p className="text-xl sm:text-2xl font-black text-black leading-none mt-1">{score}</p>
               </div>
+              <button onClick={() => setShowInfoModal(true)} className="flex items-center gap-1.5 text-gray-400 hover:text-blue-500 font-bold transition-colors">
+                <Info size={20} />
+                <span className="text-sm">Info</span>
+              </button>
+              <button
+                onClick={() => setShowExitConfirm(true)}
+                className="flex items-center gap-2 text-red-500 hover:text-red-600 font-bold transition"
+              >
+                <LogOut className="w-5 h-5" />
+                <span className="text-base">Exit Game</span>
+              </button>
             </div>
           </div>
 
@@ -310,7 +308,7 @@ export default function SignComboPage() {
 
 
           {/* WORK AREA */}
-          <div className="bg-blue-50/50 border-2 border-dashed border-blue-200 rounded-xl p-3 min-h-[100px] flex flex-wrap gap-2 sm:gap-3 items-center justify-center transition-all shrink-0">
+          <div className="bg-blue-50/50 border-2 border-dashed border-blue-200 rounded-xl p-3 h-32 flex flex-wrap gap-2 sm:gap-3 items-center justify-center overflow-hidden shrink-0">
             {workArea.length === 0 ? (
               <div className="flex flex-col items-center text-blue-300">
                 <MoveHorizontal size={20} className="mb-1" />
@@ -334,7 +332,7 @@ export default function SignComboPage() {
                     }`}
                   >
                     {/* Sizes for the Work Area */}
-                    <div className="w-14 h-20 sm:w-16 sm:h-24 md:w-20 md:h-28 lg:w-24 lg:h-36 2xl:w-28 2xl:h-40 bg-gray-100 rounded-md overflow-hidden shrink-0">
+                    <div className="w-16 h-20 bg-gray-100 rounded-md overflow-hidden shrink-0">
                        <video
                           src={sign.videoUrl}
                           autoPlay
@@ -397,7 +395,7 @@ export default function SignComboPage() {
                         setHint(""); 
                       }}
                       // Sizes for the Bank Area
-                      className="h-24 sm:h-28 md:h-32 lg:h-36 xl:h-48 2xl:h-56 aspect-[3/4] bg-gray-50 border border-gray-200 rounded-xl overflow-hidden hover:border-blue-400 hover:shadow-md transition-all active:scale-95 group animate-in fade-in duration-300 relative shrink-0"
+                      className="h-20 sm:h-24 md:h-28 lg:h-32 xl:h-40 2xl:h-48 aspect-[3/4] bg-gray-50 border border-gray-200 rounded-xl overflow-hidden hover:border-blue-400 hover:shadow-md transition-all active:scale-95 group animate-in fade-in duration-300 relative shrink-0"
                     >
                       <div className="w-full h-full pointer-events-none bg-slate-900">
                           <video 
