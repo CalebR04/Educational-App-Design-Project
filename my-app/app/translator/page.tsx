@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Info } from "lucide-react";
 import Navbar from "../../components/Navbar";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -22,6 +23,7 @@ export default function TranslatorPage() {
   const [confidence, setConfidence] = useState<number | null>(null);
   const [word, setWord] = useState<string>("");
   const [holding, setHoldProgress] = useState(0);
+  const [showInfo, setShowInfo] = useState(false);
 
   const capture_and_detect = useCallback(async () => {
     const video = videoRef.current;
@@ -228,15 +230,51 @@ export default function TranslatorPage() {
     <div className="min-h-screen bg-white text-[#111827]">
       <Navbar active="Translate" />
 
-      <main className="w-full max-w-6xl mx-auto mt-8 px-4 pb-12">
-        <section>
-          <h1 className="text-4xl font-bold text-[#0f172a]">ASL Translator</h1>
-          <p className="mt-2 text-lg text-gray-600">
-            Translate between ASL signs and text in real-time
-          </p>
-        </section>
+      <main className="max-w-7xl mx-auto px-4 py-4">
+        <div className="mb-4 flex items-start justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-1">ASL Translator</h1>
+            <p className="text-gray-600">
+              Translate between ASL signs and text in real-time
+            </p>
+          </div>
+          <button
+            onClick={() => setShowInfo(!showInfo)}
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl border-2 font-bold text-sm transition-all ${
+              showInfo
+                ? "border-blue-500 bg-blue-500 text-white"
+                : "border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50"
+            }`}
+          >
+            <Info className="w-4 h-4" /> Info
+          </button>
+        </div>
 
-        <section className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {showInfo && (
+          <div className="mb-4 rounded-2xl border-2 border-blue-200 bg-blue-50 px-6 py-6">
+            <h3 className="flex items-center gap-2 text-2xl font-bold text-blue-900">
+              🈯 How Translation Works
+            </h3>
+            <div className="mt-4 space-y-4 text-base text-blue-800">
+              <p>
+                <span className="font-bold">Sign to Text:</span> Use your camera to
+                perform ASL signs. Our AI model detects hand landmarks and
+                classifies signs in real-time.
+              </p>
+              <p>
+                <span className="font-bold">Text to Sign:</span> Type any text and get
+                a sequence of ASL signs to perform. Each sign includes video
+                demonstrations.
+              </p>
+              <p className="text-sm text-blue-600">
+                Note: This is a prototype. Real implementation would use trained
+                gesture classification models.
+              </p>
+            </div>
+          </div>
+        )}
+
+        <section className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <div className="rounded-2xl border-2 border-gray-200 bg-white p-6">
             <h2 className="mb-5 text-2xl font-bold">📷 Sign Input</h2>
 
@@ -359,30 +397,6 @@ export default function TranslatorPage() {
           </div>
         </section>
 
-        <section className="mt-8 rounded-2xl border-2 border-blue-200 bg-blue-50 px-6 py-6">
-          <h3 className="flex items-center gap-2 text-2xl font-bold text-blue-900">
-            🈯 How Translation Works
-          </h3>
-
-          <div className="mt-4 space-y-4 text-base text-blue-800">
-            <p>
-              <span className="font-bold">Sign to Text:</span> Use your camera to
-              perform ASL signs. Our AI model detects hand landmarks and
-              classifies signs in real-time.
-            </p>
-
-            <p>
-              <span className="font-bold">Text to Sign:</span> Type any text and get
-              a sequence of ASL signs to perform. Each sign includes video
-              demonstrations.
-            </p>
-
-            <p className="text-sm text-blue-600">
-              Note: This is a prototype. Real implementation would use trained
-              gesture classification models.
-            </p>
-          </div>
-        </section>
       </main>
     </div>
   );
