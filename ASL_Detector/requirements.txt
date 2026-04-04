@@ -1,6 +1,9 @@
-opencv-python
-uvicorn
 fastapi
+uvicorn
+opencv-python-headless
 torchvision
 ultralytics
 mediapipe
+pillow
+numpy
+python-multipart
