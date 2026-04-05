@@ -188,7 +188,7 @@ export default function MemoryGame() {
                 <button
                   key={card.id}
                   onClick={() => handleFlip(index)}
-                  className={`h-32 w-32 rounded-xl flex items-center justify-center shadow-lg overflow-hidden ${bgClass} ${borderClass} ${pointerClass}`}
+                  className={`h-32 w-32 rounded-xl flex items-center justify-center shadow-lg overflow-hidden ${bgClass} ${borderClass} ${pointerClass} cursor-pointer hover:border-blue-500 hover:border-4 transition-all`}
                 >
                   {isFlipped ? (
                     card.type === "letter" ? (
