@@ -65,6 +65,7 @@ export default function SignComboPage() {
   const [isCorrect, setIsCorrect] = useState(false);
   const [hint, setHint] = useState("");
   const [showReveal, setShowReveal] = useState(false);
+  const [colorMap, setColorMap] = useState<('green' | 'yellow' | 'gray')[]>([]);
 
   // UI & Drag States
   const [showInfoModal, setShowInfoModal] = useState(false);
@@ -99,6 +100,7 @@ export default function SignComboPage() {
     setIsCorrect(false);
     setHint("");
     setShowReveal(false);
+    setColorMap([]);
 
     // Build the 6-sign bank
     const correctIds = phrase.correctOrder;
@@ -110,25 +112,24 @@ export default function SignComboPage() {
   const checkPhrase = () => {
     const target = gamePhrases[currentIdx].correctOrder;
     const user = workArea.map(s => s.id);
-    const correctCount = user.filter(id => target.includes(id)).length;
+
+    // Wordle-like coloring
+    const colorMap: ('green' | 'yellow' | 'gray')[] = user.map((id, idx) => {
+      if (id === target[idx]) return 'green'; // Correct position
+      if (target.includes(id)) return 'yellow'; // In phrase, wrong position
+      return 'gray'; // Not in phrase
+    });
 
     let pointsEarned = 0;
-    let isPerfect = false;
-    let currentHint = "";
+    const correctPositions = colorMap.filter(c => c === 'green').length;
+    const correctSigns = colorMap.filter(c => c === 'green' || c === 'yellow').length;
 
-    if (JSON.stringify(user) === JSON.stringify(target)) {
+    if (correctPositions === target.length) {
       pointsEarned = 150;
-      isPerfect = true;
-    } else if (user.length === target.length && correctCount === target.length) {
-      pointsEarned = 100;
-      currentHint = "Incorrect order. Remember, Time and Place usually come first in ASL!";
+      setIsCorrect(true);
     } else {
-      pointsEarned = correctCount * 15;
-      if (user.length < target.length) {
-        currentHint = `You are missing ${target.length - user.length} sign(s).`;
-      } else {
-        currentHint = `${user.length - correctCount} sign(s) are incorrect.`;
-      }
+      pointsEarned = correctSigns * 15;
+      setIsCorrect(false);
     }
 
     if (!hasBeenScored) {
@@ -136,8 +137,8 @@ export default function SignComboPage() {
       setHasBeenScored(true);
     }
 
-    setIsCorrect(isPerfect);
-    setHint(currentHint);
+    setColorMap(colorMap);
+    setHint(`Correct positions: ${correctPositions}, Correct signs: ${correctSigns}`);
     setShowReveal(false);
   };
 
@@ -329,7 +330,7 @@ export default function SignComboPage() {
                     onDragEnd={handleDragEnd}
                     className={`relative bg-white p-1 rounded-lg shadow-md border border-blue-200 overflow-hidden animate-in fade-in zoom-in duration-200 cursor-grab active:cursor-grabbing transition-all ${
                       isDragging ? "opacity-40 scale-95" : ""
-                    }`}
+                    } ${hasBeenScored ? (colorMap[idx] === 'green' ? 'ring-2 ring-green-500' : colorMap[idx] === 'yellow' ? 'ring-2 ring-yellow-500' : 'ring-2 ring-gray-500') : ''}`}
                   >
                     {/* Sizes for the Work Area */}
                     <div className="w-16 h-20 bg-gray-100 rounded-md overflow-hidden shrink-0">
