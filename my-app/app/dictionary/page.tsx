@@ -124,7 +124,8 @@ export default function DictionaryPage() {
 
   // --- FILTERING LOGIC ---
   const filteredSigns = allSigns.filter((sign) => {
-    const matchesSearch = sign.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const queryWords = searchQuery.toLowerCase().split(/\s+/).filter(word => word.length > 0);
+    const matchesSearch = queryWords.length === 0 || queryWords.some(word => sign.name.toLowerCase().includes(word));
     const matchesCategory = selectedCategory === "All" || sign.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
