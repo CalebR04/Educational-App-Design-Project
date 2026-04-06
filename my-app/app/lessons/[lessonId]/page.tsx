@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { X, CheckCircle2, XCircle, RefreshCcw } from "lucide-react";
 import { alphabetLessons } from "@/data/lessons/alphabet";
 import Link from "next/link";
@@ -22,6 +22,11 @@ export default function LessonPlayer() {
   const [isFinished, setIsFinished] = useState(false);
   const [correctCount, setCorrectCount] = useState(0);
   const [showPauseConfirm, setShowPauseConfirm] = useState(false);
+  const [attempts, setAttempts] = useState(0);
+  const [retryHint, setRetryHint] = useState<string | null>(null);
+  const [practiceAgain, setPracticeAgain] = useState(false);
+  const savedProgressRef = useRef<{ status: string; progress: number; correctCount: number; currentIndex: number; queue: any[] } | null>(null);
+  const skipSaveRef = useRef(false);
   const router = useRouter();
 
   // Load Saved Progress
@@ -30,6 +35,7 @@ export default function LessonPlayer() {
       const saved = localStorage.getItem(`sign_quest_progress_${lessonId}`);
       if (saved) {
         const parsedData = JSON.parse(saved);
+        savedProgressRef.current = parsedData;
         if (parsedData.status === "Completed") {
           setIsFinished(true);
         } else {
@@ -50,16 +56,18 @@ export default function LessonPlayer() {
 
   // Save Progress
   useEffect(() => {
-    if (!mounted || isFinished) return;
+    if (!mounted || isFinished || skipSaveRef.current) return;
     const progressPct = Math.min(100, Math.round((correctCount / originalLesson.steps.length) * 100));
     const status = correctCount === 0 ? "Not Started" : "In Progress";
-    localStorage.setItem(`sign_quest_progress_${lessonId}`, JSON.stringify({
+    const progressData = {
       status,
       progress: progressPct,
       correctCount,
       currentIndex,
-      queue
-    }));
+      queue,
+    };
+    localStorage.setItem(`sign_quest_progress_${lessonId}`, JSON.stringify(progressData));
+    savedProgressRef.current = progressData;
   }, [currentIndex, queue, correctCount, mounted, isFinished, lessonId, originalLesson.steps.length]);
 
   // Warn on browser close/refresh mid-lesson
@@ -86,9 +94,61 @@ export default function LessonPlayer() {
   if (!originalLesson || !mounted) return null; 
 
   const step = queue[currentIndex];
-  const progress = Math.min(100, Math.round((correctCount / originalLesson.steps.length) * 100));
+  const calculatedProgress = Math.min(100, Math.round((correctCount / originalLesson.steps.length) * 100));
+  const progress = practiceAgain && savedProgressRef.current ? savedProgressRef.current.progress : calculatedProgress;
+
+  const getSignDescription = (answer?: string) => {
+    if (!answer) return null;
+    const normalizedAnswer = answer.toUpperCase();
+
+    if (normalizedAnswer.length === 1) {
+      const teachStep = originalLesson.steps.find((step) =>
+        step.type === "teach" && step.prompt.toUpperCase().includes(`LETTER ${normalizedAnswer}`)
+      );
+      return teachStep?.description ?? null;
+    }
+
+    const letterDescriptions = normalizedAnswer
+      .split("")
+      .map((letter) => {
+        const teachStep = originalLesson.steps.find((step) =>
+          step.type === "teach" && step.prompt.toUpperCase().includes(`LETTER ${letter}`)
+        );
+        return teachStep ? `${letter}: ${teachStep.description}` : null;
+      })
+      .filter(Boolean);
+
+    return letterDescriptions.length
+      ? `This word is spelled ${normalizedAnswer}. ${letterDescriptions[0]}`
+      : null;
+  };
+
+  const getRetryHint = (step: any) => {
+    if (step.description) {
+      return step.description;
+    }
+
+    const signDescription = getSignDescription(step.correctAnswer);
+    if (signDescription) {
+      return signDescription;
+    }
+
+    if (step.type === "quiz") {
+      return "Compare the shape in the picture with the answer options and look for the unique finger position.";
+    }
+    if (step.type === "match") {
+      return "Try matching the handshape and direction of the sign, not just the colors or frame.";
+    }
+    if (step.type === "synthesize") {
+      return `This spells a ${step.correctAnswer?.length || "?"}-letter word using the letters shown.`;
+    }
+    return "Try again and pay attention to the sign shape and motion.";
+  };
 
   const handleCheck = () => {
+    if (practiceAgain) {
+      setPracticeAgain(false);
+    }
     if (step.type === "teach") {
       setCorrectCount(prev => Math.min(originalLesson.steps.length, prev + 1));
       handleNext();
@@ -100,19 +160,30 @@ export default function LessonPlayer() {
     if (answerToCheck === step.correctAnswer?.toUpperCase()) {
       setCorrectCount(prev => Math.min(originalLesson.steps.length, prev + 1));
       setFeedback("correct");
+      setAttempts(0);
+      setRetryHint(null);
     } else {
-      setFeedback("incorrect");
-      
-      const newQueue = [...queue];
-      const remainingSteps = newQueue.length - currentIndex;
-      let insertIndex = newQueue.length; 
-      
-      if (remainingSteps > 2) {
-        insertIndex = Math.floor(Math.random() * (remainingSteps - 2)) + (currentIndex + 2);
+      if (attempts === 0) {
+        // First attempt failed, allow try again and show a hint
+        setAttempts(1);
+        setRetryHint(getRetryHint(step));
+      } else {
+        // Second attempt failed, show answer
+        setFeedback("incorrect");
+        setAttempts(0);
+        setRetryHint(null);
+        
+        const newQueue = [...queue];
+        const remainingSteps = newQueue.length - currentIndex;
+        let insertIndex = newQueue.length; 
+        
+        if (remainingSteps > 2) {
+          insertIndex = Math.floor(Math.random() * (remainingSteps - 2)) + (currentIndex + 2);
+        }
+        
+        newQueue.splice(insertIndex, 0, { ...step, id: `${step.id}-retry-${Date.now()}` });
+        setQueue(newQueue);
       }
-      
-      newQueue.splice(insertIndex, 0, { ...step, id: `${step.id}-retry-${Date.now()}` });
-      setQueue(newQueue);
     }
   };
 
@@ -120,25 +191,46 @@ export default function LessonPlayer() {
     setFeedback(null);
     setSelectedAnswer(null);
     setTextInput("");
+    setAttempts(0);
+    setRetryHint(null);
 
     if (currentIndex < queue.length - 1) {
       setCurrentIndex((prev) => prev + 1);
     } else {
       setIsFinished(true);
+      setPracticeAgain(false);
       // Mark as completed in storage
-      localStorage.setItem(`sign_quest_progress_${lessonId}`, JSON.stringify({
+      const completedProgress = {
         status: "Completed",
-        progress: 100
-      }));
+        progress: 100,
+        correctCount: originalLesson.steps.length,
+        currentIndex: queue.length - 1,
+        queue,
+      };
+      localStorage.setItem(`sign_quest_progress_${lessonId}`, JSON.stringify(completedProgress));
+      savedProgressRef.current = completedProgress;
     }
   };
 
   const handleReset = () => {
-    localStorage.removeItem(`sign_quest_progress_${lessonId}`);
+    const existing = localStorage.getItem(`sign_quest_progress_${lessonId}`);
+    if (existing) {
+      savedProgressRef.current = JSON.parse(existing);
+    }
+    skipSaveRef.current = true;
     setQueue(originalLesson.steps);
     setCurrentIndex(0);
     setCorrectCount(0);
     setIsFinished(false);
+    setFeedback(null);
+    setSelectedAnswer(null);
+    setTextInput("");
+    setAttempts(0);
+    setRetryHint(null);
+    setPracticeAgain(true);
+    window.requestAnimationFrame(() => {
+      skipSaveRef.current = false;
+    });
   };
 
   if (isFinished) {
@@ -267,10 +359,10 @@ export default function LessonPlayer() {
               onChange={(e) => setTextInput(e.target.value)}
               disabled={feedback !== null}
               placeholder="Type the word here..."
-              className={`w-full shrink-0 rounded-2xl border-2 p-4 text-center text-2xl font-bold uppercase tracking-widest outline-none transition-colors ${
+              className={`w-full shrink-0 rounded-2xl border-2 p-4 text-center text-2xl font-bold uppercase tracking-widest outline-none transition-colors placeholder:text-slate-700 ${
                 feedback === "incorrect" ? "border-red-500 bg-red-50 text-red-700" :
                 feedback === "correct" ? "border-green-500 bg-green-50 text-green-700" :
-                "border-slate-200 focus:border-blue-500"
+                "border-slate-200 focus:border-blue-500 text-slate-900"
               }`}
             />
           </div>
@@ -299,18 +391,41 @@ export default function LessonPlayer() {
                 </div>
               </>
             )}
+            {attempts === 1 && feedback === null && (
+              <>
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-yellow-500 shadow-sm"><XCircle className="h-7 w-7" /></div>
+                <div>
+                  <div className="text-xl font-black text-yellow-600">Try Again</div>
+                  <div className="text-sm font-bold text-yellow-500">Hint: {retryHint || "Try again with a closer look at the handshape."}</div>
+                </div>
+              </>
+            )}
           </div>
-          <button
-            onClick={feedback ? handleNext : handleCheck}
-            disabled={!feedback && step.type !== "teach" && !selectedAnswer && textInput.length === 0}
-            className={`min-w-35 ml-auto rounded-2xl px-8 py-3 text-lg font-bold text-white transition-transform active:scale-95 disabled:opacity-50 disabled:active:scale-100 ${
-              feedback === "correct" ? "bg-green-500 hover:bg-green-600 shadow-sm shadow-green-200" :
-              feedback === "incorrect" ? "bg-red-500 hover:bg-red-600 shadow-sm shadow-red-200" :
-              "bg-blue-500 hover:bg-blue-600 shadow-sm shadow-blue-200"
-            }`}
-          >
-            {feedback ? "Continue" : (step.type === "teach" ? "Next" : "Check")}
-          </button>
+          <div className="flex gap-2">
+            {attempts === 1 && feedback === null && (
+              <button
+                onClick={() => {
+                  setSelectedAnswer(null);
+                  setTextInput("");
+                  setAttempts(0);
+                }}
+                className="rounded-2xl px-6 py-3 text-lg font-bold text-white transition-transform active:scale-95 bg-yellow-500 hover:bg-yellow-600 shadow-sm shadow-yellow-200"
+              >
+                Try Again
+              </button>
+            )}
+            <button
+              onClick={feedback ? handleNext : handleCheck}
+              disabled={!feedback && step.type !== "teach" && !selectedAnswer && textInput.length === 0}
+              className={`min-w-35 ml-auto rounded-2xl px-8 py-3 text-lg font-bold text-white transition-transform active:scale-95 disabled:opacity-50 disabled:active:scale-100 ${
+                feedback === "correct" ? "bg-green-500 hover:bg-green-600 shadow-sm shadow-green-200" :
+                feedback === "incorrect" ? "bg-red-500 hover:bg-red-600 shadow-sm shadow-red-200" :
+                "bg-blue-500 hover:bg-blue-600 shadow-sm shadow-blue-200"
+              }`}
+            >
+              {feedback ? "Continue" : (step.type === "teach" ? "Next" : "Check")}
+            </button>
+          </div>
         </div>
       </footer>
 
