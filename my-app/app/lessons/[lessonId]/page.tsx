@@ -55,7 +55,7 @@ export default function LessonPlayer() {
   // Generate steps once on mount
   const [steps] = useState<LessonStep[]>(() => {
     if (staticLesson) return staticLesson.steps;
-    if (dynConfig) return generateSteps(dynConfig.vocab);
+    if (dynConfig) return generateSteps(dynConfig.vocab, dynConfig.sentences);
     return [];
   });
 
@@ -68,7 +68,7 @@ export default function LessonPlayer() {
   const [isFinished, setIsFinished] = useState(false);
   const [correctCount, setCorrectCount] = useState(0);
   const [showPauseConfirm, setShowPauseConfirm] = useState(false);
-  const [attempts, setAttempts] = useState(0);
+  const [wrongPhase, setWrongPhase] = useState<"none" | "hint" | "retry">("none");
   const [retryHint, setRetryHint] = useState<string | null>(null);
   const [practiceAgain, setPracticeAgain] = useState(false);
   const [showTip, setShowTip] = useState(false);
@@ -136,7 +136,7 @@ export default function LessonPlayer() {
       const step = queue[currentIndex];
       if (!step) return;
       const canAct = feedback || step.type === "teach" || selectedAnswer || textInput.length > 0;
-      if (canAct) feedback ? handleNext() : handleCheck();
+      if (canAct && wrongPhase !== "hint") feedback ? handleNext() : handleCheck();
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
@@ -151,6 +151,7 @@ export default function LessonPlayer() {
   const progress = practiceAgain && savedProgressRef.current ? savedProgressRef.current.progress : calculatedProgress;
 
   const getRetryHint = (s: LessonStep) => {
+    if (s.type === "sentence") return "Watch each sign carefully and type the full English sentence.";
     if (s.type === "type") {
       return s.acceptedAnswers && s.acceptedAnswers.length > 1
         ? `Accepted: ${s.acceptedAnswers.slice(0, 2).join(" or ")}`
@@ -171,11 +172,10 @@ export default function LessonPlayer() {
       return;
     }
 
-    const answer = (step.type === "synthesize" || step.type === "type")
+    const answer = (step.type === "synthesize" || step.type === "type" || step.type === "sentence")
       ? textInput.trim().toUpperCase()
       : selectedAnswer;
 
-    // acceptedAnswers supports multi-meaning labels ("EAT / FOOD")
     const accepted = step.acceptedAnswers?.length
       ? step.acceptedAnswers.map(a => a.toUpperCase())
       : [step.correctAnswer?.toUpperCase() ?? ""];
@@ -183,34 +183,16 @@ export default function LessonPlayer() {
 
     const wordKey = step.wordKey ?? (step.correctAnswer ? `letter_${step.correctAnswer.toLowerCase()}` : null);
 
-    // If they already used their retry (attempts === 1), any answer — right or wrong —
-    // counts as a failed attempt and gets pushed to the back of the queue.
-    if (attempts === 1) {
-      setFeedback("incorrect");
-      setAttempts(0);
-      setRetryHint(null);
-      if (step.type === "quiz" || step.type === "match" || step.type === "type") {
-        if (wordKey) trackWordProgress(wordKey, false);
-      } else if (step.type === "synthesize" && step.correctAnswer) {
-        const typed = answer?.split("") ?? [];
-        step.correctAnswer.split("").forEach((letter, i) => {
-          trackWordProgress(`letter_${letter.toLowerCase()}`, typed[i] === letter);
-        });
-      }
-      const newQueue = [...queue];
-      const remaining = newQueue.length - currentIndex;
-      const insertAt = remaining > 2
-        ? Math.floor(Math.random() * (remaining - 2)) + (currentIndex + 2)
-        : newQueue.length;
-      newQueue.splice(insertAt, 0, { ...step, id: `${step.id}-retry-${Date.now()}` });
-      setQueue(newQueue);
+    // On retry (second chance): wrong = fail, push to back
+    if (wrongPhase === "retry" && !isCorrect) {
+      handleReveal();
       return;
     }
 
     if (isCorrect) {
       setCorrectCount(prev => Math.min(steps.length, prev + 1));
       setFeedback("correct");
-      setAttempts(0);
+      setWrongPhase("none");
       setRetryHint(null);
       if (step.type === "quiz" || step.type === "match" || step.type === "type") {
         if (wordKey) trackWordProgress(wordKey, true);
@@ -220,16 +202,44 @@ export default function LessonPlayer() {
         }
       }
     } else {
-      setAttempts(1);
+      setWrongPhase("hint");
       setRetryHint(getRetryHint(step));
     }
+  };
+
+  const handleReveal = () => {
+    const wordKey = step.wordKey ?? (step.correctAnswer ? `letter_${step.correctAnswer.toLowerCase()}` : null);
+    setFeedback("incorrect");
+    setWrongPhase("none");
+    setRetryHint(null);
+    if (step.type === "quiz" || step.type === "match" || step.type === "type") {
+      if (wordKey) trackWordProgress(wordKey, false);
+    } else if (step.type === "synthesize" && step.correctAnswer) {
+      const typed = textInput.trim().toUpperCase().split("");
+      step.correctAnswer.split("").forEach((letter, i) => {
+        trackWordProgress(`letter_${letter.toLowerCase()}`, typed[i] === letter);
+      });
+    }
+    const newQueue = [...queue];
+    const remaining = newQueue.length - currentIndex;
+    const insertAt = remaining > 2
+      ? Math.floor(Math.random() * (remaining - 2)) + (currentIndex + 2)
+      : newQueue.length;
+    newQueue.splice(insertAt, 0, { ...step, id: `${step.id}-retry-${Date.now()}` });
+    setQueue(newQueue);
+  };
+
+  const handleRetry = () => {
+    setSelectedAnswer(null);
+    setTextInput("");
+    setWrongPhase("retry");
   };
 
   const handleNext = () => {
     setFeedback(null);
     setSelectedAnswer(null);
     setTextInput("");
-    setAttempts(0);
+    setWrongPhase("none");
     setRetryHint(null);
 
     if (currentIndex < queue.length - 1) {
@@ -247,12 +257,11 @@ export default function LessonPlayer() {
   };
 
   const handleReset = () => {
-    // Preserve everCompleted when resetting so the badge persists
     const resetData = { status: "Not Started", progress: 0, correctCount: 0, currentIndex: 0, queue: [], everCompleted: everCompletedRef.current };
     localStorage.setItem(`sign_quest_progress_${lessonId}`, JSON.stringify(resetData));
     savedProgressRef.current = resetData;
     skipSaveRef.current = true;
-    const freshSteps = staticLesson ? staticLesson.steps : generateSteps(dynConfig!.vocab);
+    const freshSteps = staticLesson ? staticLesson.steps : generateSteps(dynConfig!.vocab, dynConfig!.sentences);
     setQueue(freshSteps);
     setCurrentIndex(0);
     setCorrectCount(0);
@@ -260,7 +269,7 @@ export default function LessonPlayer() {
     setFeedback(null);
     setSelectedAnswer(null);
     setTextInput("");
-    setAttempts(0);
+    setWrongPhase("none");
     setRetryHint(null);
     setPracticeAgain(true);
     window.requestAnimationFrame(() => { skipSaveRef.current = false; });
@@ -371,7 +380,7 @@ export default function LessonPlayer() {
                 if (feedback === "incorrect" && isCorrect) style = "border-green-500 bg-green-50 text-green-700 ring-2 ring-green-500";
                 else if (isSelected) style = feedback === "incorrect" ? "border-red-500 bg-red-50 text-red-600" : "border-blue-500 bg-blue-50 text-blue-600";
                 return (
-                  <button key={opt.id} onClick={() => !feedback && setSelectedAnswer(opt.id)} className={`rounded-2xl border-2 py-2 px-4 text-center text-base font-bold transition-all ${style}`}>
+                  <button key={opt.id} onClick={() => !feedback && wrongPhase !== "hint" && setSelectedAnswer(opt.id)} className={`rounded-2xl border-2 py-2 px-4 text-center text-base font-bold transition-all ${style}`}>
                     {opt.label}
                   </button>
                 );
@@ -391,7 +400,7 @@ export default function LessonPlayer() {
                 if (feedback === "incorrect" && isCorrect) style = "border-green-500 bg-green-50 ring-2 ring-green-500";
                 else if (isSelected) style = feedback === "incorrect" ? "border-red-500 bg-red-50" : "border-blue-500 bg-blue-50";
                 return (
-                  <button key={opt.id} onClick={() => !feedback && setSelectedAnswer(opt.id)} className={`flex items-center justify-center rounded-3xl border-2 p-1 transition-all overflow-hidden ${style}`}>
+                  <button key={opt.id} onClick={() => !feedback && wrongPhase !== "hint" && setSelectedAnswer(opt.id)} className={`flex items-center justify-center rounded-3xl border-2 p-1 transition-all overflow-hidden ${style}`}>
                     {opt.mediaType === "video" && opt.videoUrl ? (
                       <video
                         key={opt.videoUrl}
@@ -427,21 +436,17 @@ export default function LessonPlayer() {
                 </div>
               )}
             </div>
-            {step.acceptedAnswers && step.acceptedAnswers.length > 1 && !feedback && (
-              <p className="text-sm text-slate-400 mb-2 shrink-0">
-                Accepted: {step.acceptedAnswers.slice(0, 2).join(" or ")}
-              </p>
-            )}
             <input
               autoFocus
               type="text"
               value={textInput}
               onChange={(e) => setTextInput(e.target.value)}
-              disabled={feedback !== null}
+              disabled={feedback !== null || wrongPhase === "hint"}
               placeholder="Type your answer..."
               className={`w-full shrink-0 rounded-2xl border-2 p-4 text-center text-2xl font-bold uppercase tracking-widest outline-none transition-colors placeholder:text-slate-300 ${
                 feedback === "incorrect" ? "border-red-500 bg-red-50 text-red-700" :
                 feedback === "correct"   ? "border-green-500 bg-green-50 text-green-700" :
+                wrongPhase === "hint"    ? "border-yellow-300 bg-yellow-50 text-slate-700" :
                 "border-slate-200 focus:border-blue-500 text-slate-900"
               }`}
             />
@@ -462,14 +467,54 @@ export default function LessonPlayer() {
               type="text"
               value={textInput}
               onChange={(e) => setTextInput(e.target.value)}
-              disabled={feedback !== null}
+              disabled={feedback !== null || wrongPhase === "hint"}
               placeholder="Type the word here..."
               className={`w-full shrink-0 rounded-2xl border-2 p-4 text-center text-2xl font-bold uppercase tracking-widest outline-none transition-colors placeholder:text-slate-300 ${
                 feedback === "incorrect" ? "border-red-500 bg-red-50 text-red-700" :
                 feedback === "correct"   ? "border-green-500 bg-green-50 text-green-700" :
+                wrongPhase === "hint"    ? "border-yellow-300 bg-yellow-50 text-slate-700" :
                 "border-slate-200 focus:border-blue-500 text-slate-900"
               }`}
             />
+          </div>
+        )}
+        {/* SENTENCE — show a row of signs, student types the English translation */}
+        {step.type === "sentence" && (
+          <div className="flex-1 flex flex-col items-center animate-in fade-in slide-in-from-bottom-4 min-h-0 gap-4">
+            <div className="flex gap-2 flex-wrap justify-center shrink-0 overflow-x-auto w-full">
+              {step.sentenceMedia?.map((m, i) => (
+                <div key={i} className="flex flex-col items-center gap-1 shrink-0">
+                  {m.mediaType === "video" ? (
+                    <video key={m.src} src={m.src} autoPlay loop muted playsInline
+                      className="h-24 w-24 rounded-xl object-cover bg-slate-900" />
+                  ) : (
+                    <div className="h-24 w-24 rounded-xl bg-slate-50 border border-slate-200 p-1">
+                      <img src={m.src} alt={m.label} className="h-full w-full object-contain mix-blend-multiply" />
+                    </div>
+                  )}
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wide">{m.label}</span>
+                </div>
+              ))}
+            </div>
+            <input
+              autoFocus
+              type="text"
+              value={textInput}
+              onChange={(e) => setTextInput(e.target.value)}
+              disabled={feedback !== null || wrongPhase === "hint"}
+              placeholder="Type the English sentence..."
+              className={`w-full shrink-0 rounded-2xl border-2 p-4 text-center text-xl font-bold uppercase tracking-wider outline-none transition-colors placeholder:text-slate-300 ${
+                feedback === "incorrect" ? "border-red-500 bg-red-50 text-red-700" :
+                feedback === "correct"   ? "border-green-500 bg-green-50 text-green-700" :
+                wrongPhase === "hint"    ? "border-yellow-300 bg-yellow-50 text-slate-700" :
+                "border-slate-200 focus:border-blue-500 text-slate-900"
+              }`}
+            />
+            {feedback === "incorrect" && step.acceptedAnswers && (
+              <p className="text-sm text-slate-500 shrink-0">
+                Also accepted: {step.acceptedAnswers.slice(0, 2).join(" / ")}
+              </p>
+            )}
           </div>
         )}
       </main>
@@ -477,7 +522,8 @@ export default function LessonPlayer() {
       {/* Footer */}
       <footer className={`shrink-0 border-t-2 transition-colors ${
         feedback === "correct"   ? "border-green-200 bg-green-100" :
-        feedback === "incorrect" ? "border-red-200 bg-red-100"     : "border-slate-100 bg-white"
+        feedback === "incorrect" ? "border-red-200 bg-red-100"     :
+        wrongPhase === "hint"    ? "border-yellow-200 bg-yellow-50" : "border-slate-100 bg-white"
       }`}>
         <div className="mx-auto flex w-full max-w-4xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-4">
@@ -496,33 +542,40 @@ export default function LessonPlayer() {
                 </div>
               </>
             )}
-            {attempts === 1 && !feedback && (
+            {wrongPhase === "hint" && !feedback && (
               <>
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-yellow-500 shadow-sm"><XCircle className="h-7 w-7" /></div>
                 <div>
-                  <div className="text-xl font-black text-yellow-600">Try Again</div>
+                  <div className="text-xl font-black text-yellow-600">Not Quite</div>
                   <div className="text-sm font-bold text-yellow-500">{retryHint ?? "Look closely at the handshape."}</div>
                 </div>
               </>
             )}
           </div>
           <div className="flex gap-2">
-            {attempts === 1 && !feedback && (
-              <button onClick={() => { setSelectedAnswer(null); setTextInput(""); setAttempts(0); }}
-                className="rounded-2xl px-6 py-3 text-lg font-bold text-white bg-yellow-500 hover:bg-yellow-600 transition-transform active:scale-95">
-                Try Again
+            {wrongPhase === "hint" && !feedback ? (
+              <>
+                <button onClick={handleReveal}
+                  className="rounded-2xl px-5 py-3 text-base font-bold text-slate-600 border-2 border-slate-200 hover:bg-slate-100 transition-transform active:scale-95">
+                  Reveal Answer
+                </button>
+                <button onClick={handleRetry}
+                  className="rounded-2xl px-6 py-3 text-lg font-bold text-white bg-yellow-500 hover:bg-yellow-600 transition-transform active:scale-95">
+                  Retry
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={feedback ? handleNext : handleCheck}
+                disabled={!feedback && step.type !== "teach" && !selectedAnswer && textInput.trim().length === 0}
+                className={`min-w-35 ml-auto rounded-2xl px-8 py-3 text-lg font-bold text-white transition-transform active:scale-95 disabled:opacity-50 disabled:active:scale-100 ${
+                  feedback === "correct"   ? "bg-green-500 hover:bg-green-600" :
+                  feedback === "incorrect" ? "bg-red-500 hover:bg-red-600"     : "bg-blue-500 hover:bg-blue-600"
+                }`}
+              >
+                {feedback ? "Continue" : step.type === "teach" ? "Next" : "Check"}
               </button>
             )}
-            <button
-              onClick={feedback ? handleNext : handleCheck}
-              disabled={!feedback && step.type !== "teach" && !selectedAnswer && textInput.length === 0}
-              className={`min-w-35 ml-auto rounded-2xl px-8 py-3 text-lg font-bold text-white transition-transform active:scale-95 disabled:opacity-50 disabled:active:scale-100 ${
-                feedback === "correct"   ? "bg-green-500 hover:bg-green-600" :
-                feedback === "incorrect" ? "bg-red-500 hover:bg-red-600"     : "bg-blue-500 hover:bg-blue-600"
-              }`}
-            >
-              {feedback ? "Continue" : step.type === "teach" ? "Next" : "Check"}
-            </button>
           </div>
         </div>
       </footer>

@@ -1,25 +1,29 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-export default function AuthPage() {
+function AuthInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
 
-  const [activeTab, setActiveTab] = useState<"login" | "signup">("login");
+  const [activeTab, setActiveTab] = useState<"login" | "signup">(
+    searchParams.get("tab") === "signup" ? "signup" : "login"
+  );
   const [showPassword, setShowPassword] = useState(false);
 
   const [fullName, setFullName] = useState("");
+  const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
-
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [showGuestModal, setShowGuestModal] = useState(false);
 
   const handleSubmit = async () => {
     setErrorMessage("");
@@ -33,6 +37,11 @@ export default function AuthPage() {
     if (activeTab === "signup") {
       if (!fullName.trim()) {
         setErrorMessage("Please enter your full name.");
+        return;
+      }
+
+      if (!displayName.trim()) {
+        setErrorMessage("Please enter a display name.");
         return;
       }
 
@@ -62,10 +71,24 @@ export default function AuthPage() {
       }
 
       if (data.user) {
+        // Check username (display name) uniqueness
+        const { data: existing } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("username", displayName.trim())
+          .maybeSingle();
+
+        if (existing) {
+          setErrorMessage("That display name is already taken. Please choose another.");
+          await supabase.auth.signOut();
+          setLoading(false);
+          return;
+        }
+
         const { error: profileError } = await supabase.from("profiles").upsert({
           id: data.user.id,
-          full_name: fullName,
-          username: email.split("@")[0],
+          full_name: fullName.trim(),
+          username: displayName.trim(),
         });
 
         if (profileError) {
@@ -75,11 +98,19 @@ export default function AuthPage() {
         }
       }
 
-      setSuccessMessage("Account created successfully. You can now sign in.");
-      setActiveTab("login");
-      setPassword("");
-      setConfirmPassword("");
+      // Auto sign-in after account creation
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+      if (signInError) {
+        setSuccessMessage("Account created! Please log in.");
+        setActiveTab("login");
+        setPassword("");
+        setConfirmPassword("");
+        setLoading(false);
+        return;
+      }
       setLoading(false);
+      router.push("/lessons");
+      router.refresh();
       return;
     }
 
@@ -92,6 +123,14 @@ export default function AuthPage() {
       setErrorMessage(error.message);
       setLoading(false);
       return;
+    }
+
+    // If "Remember me" is unchecked, remove the persisted token from localStorage
+    // so the session doesn't survive a browser restart.
+    if (!rememberMe) {
+      Object.keys(localStorage)
+        .filter(k => k.startsWith("sb-"))
+        .forEach(k => localStorage.removeItem(k));
     }
 
     setLoading(false);
@@ -150,15 +189,33 @@ export default function AuthPage() {
             {activeTab === "signup" && (
               <div className="mb-5">
                 <label className="mb-2 block text-sm font-semibold text-[#334155]">
-                  Full Name
+                  Display Name
                 </label>
                 <div className="flex items-center rounded-2xl border-2 border-gray-200 px-4 py-4">
                   <span className="mr-3 text-gray-400">👤</span>
                   <input
                     type="text"
-                    placeholder="Enter your name"
+                    placeholder="Your real name"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
+                    className="w-full bg-transparent text-base font-medium text-gray-900 outline-none placeholder:text-gray-400"
+                  />
+                </div>
+              </div>
+            )}
+
+            {activeTab === "signup" && (
+              <div className="mb-5">
+                <label className="mb-2 block text-sm font-semibold text-[#334155]">
+                  Display Name <span className="text-xs font-normal text-gray-400">(public · must be unique)</span>
+                </label>
+                <div className="flex items-center rounded-2xl border-2 border-gray-200 px-4 py-4">
+                  <span className="mr-3 text-gray-400">🏷️</span>
+                  <input
+                    type="text"
+                    placeholder="Shown on leaderboards"
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
                     className="w-full bg-transparent text-base font-medium text-gray-900 outline-none placeholder:text-gray-400"
                   />
                 </div>
@@ -204,6 +261,20 @@ export default function AuthPage() {
               </div>
             </div>
 
+            {activeTab === "login" && (
+              <div className="mb-2 mt-1">
+                <label className="flex items-center gap-2 cursor-pointer text-sm text-[#334155] select-none">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="h-4 w-4 rounded accent-blue-600"
+                  />
+                  Remember me
+                </label>
+              </div>
+            )}
+
             {activeTab === "signup" && (
               <div className="mb-5">
                 <label className="mb-2 block text-sm font-semibold text-[#334155]">
@@ -221,34 +292,6 @@ export default function AuthPage() {
                 </div>
               </div>
             )}
-
-            <div className="mt-2 flex items-center justify-between text-sm">
-              <label className="flex items-center gap-2 text-[#334155]">
-                <input
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className="h-4 w-4 rounded"
-                />
-                <span>Remember me</span>
-              </label>
-
-              {activeTab === "login" ? (
-                <button
-                  type="button"
-                  className="font-semibold text-blue-600 hover:underline"
-                >
-                  Forgot password?
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  className="font-semibold text-blue-600 hover:underline"
-                >
-                  Terms
-                </button>
-              )}
-            </div>
 
             {errorMessage && (
               <p className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-600">
@@ -271,39 +314,67 @@ export default function AuthPage() {
               {loading
                 ? "Please wait..."
                 : activeTab === "login"
-                ? "↪ Log In"
-                : "✨ Create Account"}
-            </button>
-          </div>
-
-          <div className="mt-8 flex items-center gap-4 text-gray-400">
-            <div className="h-px flex-1 bg-gray-200" />
-            <span className="text-sm">Or continue with</span>
-            <div className="h-px flex-1 bg-gray-200" />
-          </div>
-
-          <div className="mt-6 grid grid-cols-3 gap-3">
-            <button className="rounded-2xl border-2 border-gray-200 py-4 text-2xl hover:bg-gray-50">
-              G
-            </button>
-            <button className="rounded-2xl border-2 border-gray-200 py-4 text-2xl hover:bg-gray-50">
-              
-            </button>
-            <button className="rounded-2xl border-2 border-gray-200 py-4 text-2xl hover:bg-gray-50">
-              f
+                ? "Log In"
+                : "Create Account"}
             </button>
           </div>
         </div>
 
         <div className="mt-6 text-center">
           <button
-            onClick={() => router.push("/")}
+            onClick={() => setShowGuestModal(true)}
             className="text-lg font-semibold text-white underline underline-offset-4"
           >
             Continue as Guest
           </button>
         </div>
       </div>
+
+      {/* Guest warning modal */}
+      {showGuestModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+          <div className="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-yellow-100 text-3xl mx-auto mb-4">
+              ⚠️
+            </div>
+            <h2 className="text-xl font-black text-gray-900 mb-2">Progress Won&apos;t Be Saved</h2>
+            <p className="text-gray-500 text-sm mb-6">
+              As a guest your progress is not saved. You can create a free account at any time to save everything.
+            </p>
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={async () => {
+                  // Clear any lesson progress from a previous session
+                  Object.keys(localStorage)
+                    .filter(k => k.startsWith("sign_quest_progress_"))
+                    .forEach(k => localStorage.removeItem(k));
+                  await supabase.auth.signInAnonymously();
+                  setShowGuestModal(false);
+                  router.push("/");
+                  router.refresh();
+                }}
+                className="w-full rounded-2xl bg-gray-900 py-3 font-bold text-white hover:bg-black transition"
+              >
+                Continue as Guest
+              </button>
+              <button
+                onClick={() => { setShowGuestModal(false); setActiveTab("signup"); }}
+                className="w-full rounded-2xl bg-gradient-to-r from-blue-500 to-purple-600 py-3 font-bold text-white hover:opacity-95 transition"
+              >
+                Create Free Account
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+  );
+}
+
+export default function AuthPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-linear-to-br from-blue-500 via-purple-500 to-pink-500" />}>
+      <AuthInner />
+    </Suspense>
   );
 }

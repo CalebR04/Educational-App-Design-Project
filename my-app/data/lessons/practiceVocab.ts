@@ -1,5 +1,5 @@
 import { lessonConfigs } from "./lessonConfigs";
-import type { VocabItem } from "./lessonConfigs";
+import type { VocabItem, SentenceItem } from "./lessonConfigs";
 
 function shuffle<T>(arr: T[]): T[] {
   return [...arr].sort(() => Math.random() - 0.5);
@@ -20,6 +20,16 @@ export function getAllVocab(): Record<string, VocabItem> {
 // Get vocab for a specific lesson
 export function getLessonVocab(lessonId: string): VocabItem[] {
   return lessonConfigs[lessonId]?.vocab ?? [];
+}
+
+// Get all sentences from all lessons (for global practice sessions)
+export function getAllSentences(): SentenceItem[] {
+  return Object.values(lessonConfigs).flatMap(c => c.sentences ?? []);
+}
+
+// Get sentences for a specific lesson
+export function getLessonSentences(lessonId: string): SentenceItem[] {
+  return lessonConfigs[lessonId]?.sentences ?? [];
 }
 
 type ProgressEntry = {

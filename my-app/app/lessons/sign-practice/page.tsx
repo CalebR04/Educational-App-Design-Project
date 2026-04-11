@@ -4,8 +4,8 @@ import { useState, useEffect, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { X, CheckCircle2, XCircle, Zap } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { getAllVocab, getLessonVocab, selectPracticeItems } from "@/data/lessons/practiceVocab";
-import type { VocabItem } from "@/data/lessons/lessonConfigs";
+import { getAllVocab, getLessonVocab, getAllSentences, getLessonSentences, selectPracticeItems } from "@/data/lessons/practiceVocab";
+import type { VocabItem, SentenceItem } from "@/data/lessons/lessonConfigs";
 import type { LessonStep } from "@/data/lessons/alphabet";
 import Link from "next/link";
 
@@ -96,6 +96,17 @@ function makeMatchStep(item: VocabItem, globalPool: VocabItem[]): LessonStep {
   };
 }
 
+function makeSentencePracticeStep(s: SentenceItem): LessonStep {
+  return {
+    id: `prac-sentence-${s.id}-${Date.now()}`,
+    type: "sentence",
+    prompt: s.prompt ?? "Translate this ASL sentence:",
+    sentenceMedia: s.signs.map(sign => ({ src: sign.src, mediaType: sign.mediaType, label: sign.label })),
+    correctAnswer: s.acceptedAnswers[0],
+    acceptedAnswers: s.acceptedAnswers,
+  };
+}
+
 function generatePracticeSteps(selected: VocabItem[], globalPool: VocabItem[]): LessonStep[] {
   return selected.map(item => {
     const roll = Math.random();
@@ -157,6 +168,7 @@ function SignPracticeInner() {
   const [feedback, setFeedback] = useState<"correct" | "incorrect" | null>(null);
   const [correctCount, setCorrectCount] = useState(0);
   const [attempts, setAttempts] = useState(0);
+  const [wrongPhase, setWrongPhase] = useState<"none" | "hint" | "retry">("none");
   const [retryHint, setRetryHint] = useState<string | null>(null);
   const [isFinished, setIsFinished] = useState(false);
   const [showPauseConfirm, setShowPauseConfirm] = useState(false);
@@ -183,9 +195,29 @@ function SignPracticeInner() {
       }
 
       const selected = selectPracticeItems(pool, progressMap);
-      // Always use globalVocab as the distractor pool so same-type items span the full vocabulary
-      const steps = generatePracticeSteps(selected, globalVocab);
+      // Lesson practice: distractors from same lesson. Global practice: full vocab pool.
+      const distractorPool = lessonId ? pool : globalVocab;
+      const vocabSteps = generatePracticeSteps(selected, distractorPool);
 
+      // Pick 2-3 sentence steps from the lesson (or global pool if no lesson)
+      const sentencePool = lessonId ? getLessonSentences(lessonId) : getAllSentences();
+      const sentenceSteps = shuffle(sentencePool)
+        .slice(0, Math.min(3, sentencePool.length))
+        .map(makeSentencePracticeStep);
+
+      // Interleave sentences into the vocab steps (roughly every 4 questions)
+      const combined: LessonStep[] = [];
+      let si = 0;
+      vocabSteps.forEach((step, i) => {
+        combined.push(step);
+        if (sentenceSteps.length > 0 && (i + 1) % 4 === 0 && si < sentenceSteps.length) {
+          combined.push(sentenceSteps[si++]);
+        }
+      });
+      // Any remaining sentence steps go at the end
+      while (si < sentenceSteps.length) combined.push(sentenceSteps[si++]);
+
+      const steps = combined;
       setQueue(steps);
       setTotalQuestions(steps.length);
       setLoading(false);
@@ -200,7 +232,7 @@ function SignPracticeInner() {
       const step = queue[currentIndex];
       if (!step) return;
       if (feedback) handleNext();
-      else if (selectedAnswer || textInput.trim().length > 0) handleCheck();
+      else if (wrongPhase !== "hint" && (selectedAnswer || textInput.trim().length > 0)) handleCheck();
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
@@ -235,10 +267,8 @@ function SignPracticeInner() {
         <div className="flex h-32 w-32 items-center justify-center rounded-full bg-blue-100 animate-in zoom-in">
           <Zap className="h-16 w-16 text-blue-500" />
         </div>
-        <h1 className="mt-6 text-4xl font-black text-slate-900">Practice Complete!</h1>
-        <p className="mt-2 text-lg text-slate-600">
-          {correctCount} of {totalQuestions} correct — {pct}%
-        </p>
+        <h1 className="mt-6 text-4xl font-black text-slate-900">Practice Completed</h1>
+        <p className="mt-2 text-lg text-slate-600">Great Job!</p>
         <div className="mt-8 flex flex-col sm:flex-row gap-4">
           <Link href="/lessons" className="rounded-2xl bg-blue-500 px-10 py-4 font-bold text-white transition hover:bg-blue-600 shadow-md shadow-blue-200">
             Back to Lessons
@@ -257,9 +287,10 @@ function SignPracticeInner() {
   const step = queue[currentIndex];
   if (!step) return null;
 
-  const progress = Math.round((currentIndex / (queue.length)) * 100);
+  const progress = Math.round((correctCount / totalQuestions) * 100);
 
   const getRetryHint = (s: LessonStep) => {
+    if (s.type === "sentence") return "Watch each sign and type the full English sentence.";
     if (s.type === "type") {
       return s.acceptedAnswers && s.acceptedAnswers.length > 1
         ? `Accepted: ${s.acceptedAnswers.slice(0, 2).join(" or ")}`
@@ -271,39 +302,51 @@ function SignPracticeInner() {
   };
 
   const handleCheck = () => {
-    const answer = step.type === "type" ? textInput.trim().toUpperCase() : selectedAnswer;
+    const answer = (step.type === "type" || step.type === "sentence") ? textInput.trim().toUpperCase() : selectedAnswer;
     const accepted = step.acceptedAnswers?.length
       ? step.acceptedAnswers.map(a => a.toUpperCase())
       : [step.correctAnswer?.toUpperCase() ?? ""];
     const isCorrect = accepted.includes(answer?.toUpperCase() ?? "");
+
+    if (wrongPhase === "retry" && !isCorrect) {
+      handleReveal();
+      return;
+    }
+
     if (isCorrect) {
-      setCorrectCount(c => c + 1);
+      const isRetry = step.id.includes("-retry-");
+      if (!isRetry) setCorrectCount(c => c + 1);
       setFeedback("correct");
-      setAttempts(0);
+      setWrongPhase("none");
       setRetryHint(null);
       if (step.wordKey) trackWordProgress(step.wordKey, true);
     } else {
-      if (attempts === 0) {
-        setAttempts(1);
-        setRetryHint(getRetryHint(step));
-      } else {
-        setFeedback("incorrect");
-        setAttempts(0);
-        setRetryHint(null);
-        if (step.wordKey) trackWordProgress(step.wordKey, false);
-        // Push to back of queue
-        const newQueue = [...queue];
-        newQueue.push({ ...step, id: `${step.id}-retry-${Date.now()}` });
-        setQueue(newQueue);
-      }
+      setWrongPhase("hint");
+      setRetryHint(getRetryHint(step));
     }
+  };
+
+  const handleReveal = () => {
+    setFeedback("incorrect");
+    setWrongPhase("none");
+    setRetryHint(null);
+    if (step.wordKey) trackWordProgress(step.wordKey, false);
+    const newQueue = [...queue];
+    newQueue.push({ ...step, id: `${step.id}-retry-${Date.now()}` });
+    setQueue(newQueue);
+  };
+
+  const handleRetry = () => {
+    setSelectedAnswer(null);
+    setTextInput("");
+    setWrongPhase("retry");
   };
 
   const handleNext = () => {
     setFeedback(null);
     setSelectedAnswer(null);
     setTextInput("");
-    setAttempts(0);
+    setWrongPhase("none");
     setRetryHint(null);
     if (currentIndex < queue.length - 1) {
       setCurrentIndex(i => i + 1);
@@ -322,7 +365,7 @@ function SignPracticeInner() {
         <div className="h-3 flex-1 rounded-full bg-slate-100 overflow-hidden">
           <div className="h-full rounded-full bg-blue-500 transition-all duration-500 ease-out" style={{ width: `${progress}%` }} />
         </div>
-        <div className="min-w-14 text-right font-black text-blue-600 text-xl">{currentIndex + 1}/{queue.length}</div>
+        <div className="min-w-14 text-right font-black text-blue-600 text-xl">{correctCount}/{totalQuestions}</div>
       </header>
 
       {/* Main */}
@@ -350,7 +393,7 @@ function SignPracticeInner() {
                 if (feedback === "incorrect" && isCorrect) style = "border-green-500 bg-green-50 text-green-700 ring-2 ring-green-500";
                 else if (isSelected) style = feedback === "incorrect" ? "border-red-500 bg-red-50 text-red-600" : "border-blue-500 bg-blue-50 text-blue-600";
                 return (
-                  <button key={opt.id} onClick={() => !feedback && setSelectedAnswer(opt.id)}
+                  <button key={opt.id} onClick={() => !feedback && wrongPhase !== "hint" && setSelectedAnswer(opt.id)}
                     className={`rounded-2xl border-2 py-2 px-4 text-center text-base font-bold transition-all ${style}`}>
                     {opt.label}
                   </button>
@@ -373,21 +416,17 @@ function SignPracticeInner() {
                 </div>
               )}
             </div>
-            {step.acceptedAnswers && step.acceptedAnswers.length > 1 && !feedback && (
-              <p className="text-sm text-slate-400 mb-2 shrink-0">
-                Accepted: {step.acceptedAnswers.slice(0, 2).join(" or ")}
-              </p>
-            )}
             <input
               autoFocus
               type="text"
               value={textInput}
               onChange={(e) => setTextInput(e.target.value)}
-              disabled={feedback !== null}
+              disabled={feedback !== null || wrongPhase === "hint"}
               placeholder="Type your answer..."
               className={`w-full shrink-0 rounded-2xl border-2 p-4 text-center text-2xl font-bold uppercase tracking-widest outline-none transition-colors placeholder:text-slate-300 ${
                 feedback === "incorrect" ? "border-red-500 bg-red-50 text-red-700" :
                 feedback === "correct"   ? "border-green-500 bg-green-50 text-green-700" :
+                wrongPhase === "hint"    ? "border-yellow-300 bg-yellow-50 text-slate-700" :
                 "border-slate-200 focus:border-blue-500 text-slate-900"
               }`}
             />
@@ -405,7 +444,7 @@ function SignPracticeInner() {
                 if (feedback === "incorrect" && isCorrect) style = "border-green-500 bg-green-50 ring-2 ring-green-500";
                 else if (isSelected) style = feedback === "incorrect" ? "border-red-500 bg-red-50" : "border-blue-500 bg-blue-50";
                 return (
-                  <button key={opt.id} onClick={() => !feedback && setSelectedAnswer(opt.id)}
+                  <button key={opt.id} onClick={() => !feedback && wrongPhase !== "hint" && setSelectedAnswer(opt.id)}
                     className={`flex items-center justify-center rounded-3xl border-2 p-1 transition-all overflow-hidden ${style}`}>
                     {opt.mediaType === "video" && opt.videoUrl ? (
                       <video key={opt.videoUrl} src={opt.videoUrl} autoPlay loop muted playsInline
@@ -419,12 +458,52 @@ function SignPracticeInner() {
             </div>
           </div>
         )}
+        {/* SENTENCE */}
+        {step.type === "sentence" && (
+          <div className="flex-1 flex flex-col items-center animate-in fade-in slide-in-from-bottom-4 min-h-0 gap-4">
+            <div className="flex gap-2 flex-wrap justify-center shrink-0 overflow-x-auto w-full">
+              {step.sentenceMedia?.map((m, i) => (
+                <div key={i} className="flex flex-col items-center gap-1 shrink-0">
+                  {m.mediaType === "video" ? (
+                    <video key={m.src} src={m.src} autoPlay loop muted playsInline
+                      className="h-24 w-24 rounded-xl object-cover bg-slate-900" />
+                  ) : (
+                    <div className="h-24 w-24 rounded-xl bg-slate-50 border border-slate-200 p-1">
+                      <img src={m.src} alt={m.label} className="h-full w-full object-contain mix-blend-multiply" />
+                    </div>
+                  )}
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wide">{m.label}</span>
+                </div>
+              ))}
+            </div>
+            <input
+              autoFocus
+              type="text"
+              value={textInput}
+              onChange={(e) => setTextInput(e.target.value)}
+              disabled={feedback !== null || wrongPhase === "hint"}
+              placeholder="Type the English sentence..."
+              className={`w-full shrink-0 rounded-2xl border-2 p-4 text-center text-xl font-bold uppercase tracking-wider outline-none transition-colors placeholder:text-slate-300 ${
+                feedback === "incorrect" ? "border-red-500 bg-red-50 text-red-700" :
+                feedback === "correct"   ? "border-green-500 bg-green-50 text-green-700" :
+                wrongPhase === "hint"    ? "border-yellow-300 bg-yellow-50 text-slate-700" :
+                "border-slate-200 focus:border-blue-500 text-slate-900"
+              }`}
+            />
+            {feedback === "incorrect" && step.acceptedAnswers && (
+              <p className="text-sm text-slate-500 shrink-0">
+                Also accepted: {step.acceptedAnswers.slice(0, 2).join(" / ")}
+              </p>
+            )}
+          </div>
+        )}
       </main>
 
       {/* Footer */}
       <footer className={`shrink-0 border-t-2 transition-colors ${
         feedback === "correct" ? "border-green-200 bg-green-100" :
-        feedback === "incorrect" ? "border-red-200 bg-red-100" : "border-slate-100 bg-white"
+        feedback === "incorrect" ? "border-red-200 bg-red-100" :
+        wrongPhase === "hint"    ? "border-yellow-200 bg-yellow-50" : "border-slate-100 bg-white"
       }`}>
         <div className="mx-auto flex w-full max-w-4xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-4">
@@ -437,29 +516,36 @@ function SignPracticeInner() {
               <div><div className="text-xl font-black text-red-600">Incorrect</div>
               <div className="text-sm font-bold text-red-500">Correct answer: {step.correctAnswer}</div></div></>
             )}
-            {attempts === 1 && !feedback && (
+            {wrongPhase === "hint" && !feedback && (
               <><div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-yellow-500 shadow-sm"><XCircle className="h-7 w-7" /></div>
-              <div><div className="text-xl font-black text-yellow-600">Try Again</div>
+              <div><div className="text-xl font-black text-yellow-600">Not Quite</div>
               <div className="text-sm font-bold text-yellow-500">{retryHint}</div></div></>
             )}
           </div>
           <div className="flex gap-2">
-            {attempts === 1 && !feedback && (
-              <button onClick={() => { setSelectedAnswer(null); setTextInput(""); setAttempts(0); }}
-                className="rounded-2xl px-6 py-3 text-lg font-bold text-white bg-yellow-500 hover:bg-yellow-600 transition-transform active:scale-95">
-                Try Again
+            {wrongPhase === "hint" && !feedback ? (
+              <>
+                <button onClick={handleReveal}
+                  className="rounded-2xl px-5 py-3 text-base font-bold text-slate-600 border-2 border-slate-200 hover:bg-slate-100 transition-transform active:scale-95">
+                  Reveal Answer
+                </button>
+                <button onClick={handleRetry}
+                  className="rounded-2xl px-6 py-3 text-lg font-bold text-white bg-yellow-500 hover:bg-yellow-600 transition-transform active:scale-95">
+                  Retry
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={feedback ? handleNext : handleCheck}
+                disabled={!feedback && !selectedAnswer && textInput.trim().length === 0}
+                className={`min-w-32 ml-auto rounded-2xl px-8 py-3 text-lg font-bold text-white transition-transform active:scale-95 disabled:opacity-50 disabled:active:scale-100 ${
+                  feedback === "correct" ? "bg-green-500 hover:bg-green-600" :
+                  feedback === "incorrect" ? "bg-red-500 hover:bg-red-600" : "bg-blue-500 hover:bg-blue-600"
+                }`}
+              >
+                {feedback ? "Continue" : "Check"}
               </button>
             )}
-            <button
-              onClick={feedback ? handleNext : handleCheck}
-              disabled={!feedback && !selectedAnswer && textInput.trim().length === 0}
-              className={`min-w-32 ml-auto rounded-2xl px-8 py-3 text-lg font-bold text-white transition-transform active:scale-95 disabled:opacity-50 disabled:active:scale-100 ${
-                feedback === "correct" ? "bg-green-500 hover:bg-green-600" :
-                feedback === "incorrect" ? "bg-red-500 hover:bg-red-600" : "bg-blue-500 hover:bg-blue-600"
-              }`}
-            >
-              {feedback ? "Continue" : "Check"}
-            </button>
           </div>
         </div>
       </footer>

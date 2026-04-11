@@ -6,6 +6,19 @@ export interface VocabItem {
   description: string;
 }
 
+export interface SentenceSign {
+  src: string;
+  mediaType: "image" | "video";
+  label: string;
+}
+
+export interface SentenceItem {
+  id: string;
+  signs: SentenceSign[];
+  acceptedAnswers: string[];  // UPPERCASE — all valid English translations
+  prompt?: string;
+}
+
 export interface LessonConfig {
   id: string;
   title: string;
@@ -15,6 +28,7 @@ export interface LessonConfig {
   tags: string[];
   tip?: string;
   vocab: VocabItem[];
+  sentences?: SentenceItem[];
 }
 
 export const lessonConfigs: Record<string, LessonConfig> = {
@@ -126,6 +140,40 @@ export const lessonConfigs: Record<string, LessonConfig> = {
       { key: "sign_nice",    label: "NICE",         mediaType: "video", mediaSrc: "/asl_videos/adjectives/nice.mp4",   description: "Slide the flat palm of your dominant hand across the upturned flat palm of your other hand." },
       { key: "sign_meet",    label: "MEET",         mediaType: "video", mediaSrc: "/asl_videos/verbs/meet.mp4",        description: "Both index fingers point upward and face each other, then bring them together to meet in the middle." },
     ],
+    sentences: [
+      {
+        id: "s-contact-1",
+        signs: [
+          { src: "/asl_videos/greetings/hello.mp4",    mediaType: "video", label: "HELLO" },
+          { src: "/asl_videos/adjectives/nice.mp4",    mediaType: "video", label: "NICE" },
+          { src: "/asl_videos/verbs/meet.mp4",         mediaType: "video", label: "MEET" },
+          { src: "/asl_videos/pronouns/you.mp4",       mediaType: "video", label: "YOU" },
+        ],
+        acceptedAnswers: ["HELLO NICE TO MEET YOU", "HELLO NICE MEET YOU", "HI NICE TO MEET YOU"],
+        prompt: "What does this greeting say?",
+      },
+      {
+        id: "s-contact-2",
+        signs: [
+          { src: "/asl_videos/questions/how.mp4",      mediaType: "video", label: "HOW" },
+          { src: "/asl_videos/daily_life/name.mp4",    mediaType: "video", label: "NAME" },
+          { src: "/asl_videos/pronouns/you.mp4",       mediaType: "video", label: "YOU" },
+        ],
+        acceptedAnswers: ["WHAT IS YOUR NAME", "HOW YOUR NAME", "YOUR NAME", "WHAT YOUR NAME"],
+        prompt: "What question is being asked?",
+      },
+      {
+        id: "s-contact-3",
+        signs: [
+          { src: "/asl_videos/daily_life/me.mp4",      mediaType: "video", label: "ME" },
+          { src: "/asl_videos/daily_life/name.mp4",    mediaType: "video", label: "NAME" },
+          { src: "/asl_videos/adjectives/nice.mp4",    mediaType: "video", label: "NICE" },
+          { src: "/asl_videos/verbs/meet.mp4",         mediaType: "video", label: "MEET" },
+        ],
+        acceptedAnswers: ["MY NAME NICE TO MEET", "MY NAME NICE MEET", "MY NAME AND NICE TO MEET YOU"],
+        prompt: "Translate this sentence:",
+      },
+    ],
   },
 
   "greetings-manners": {
@@ -143,6 +191,37 @@ export const lessonConfigs: Record<string, LessonConfig> = {
       { key: "sign_fine",     label: "FINE",           mediaType: "video", mediaSrc: "/asl_videos/adjectives/fine.mp4",   description: "Spread your fingers with your thumb touching your chest, then tap it once." },
       { key: "sign_good",     label: "GOOD",           mediaType: "video", mediaSrc: "/asl_videos/adjectives/good.mp4",   description: "Touch the fingertips to your chin, then lower your flat hand down into the palm of the other." },
     ],
+    sentences: [
+      {
+        id: "s-manners-1",
+        signs: [
+          { src: "/asl_videos/greetings/thank_you.mp4", mediaType: "video", label: "THANK YOU" },
+          { src: "/asl_videos/greetings/please.mp4",    mediaType: "video", label: "PLEASE" },
+        ],
+        acceptedAnswers: ["THANK YOU PLEASE", "PLEASE AND THANK YOU", "THANK YOU AND PLEASE"],
+        prompt: "What polite phrase is this?",
+      },
+      {
+        id: "s-manners-2",
+        signs: [
+          { src: "/asl_videos/greetings/sorry.mp4",     mediaType: "video", label: "SORRY" },
+          { src: "/asl_videos/adjectives/good.mp4",     mediaType: "video", label: "GOOD" },
+          { src: "/asl_videos/greetings/please.mp4",    mediaType: "video", label: "PLEASE" },
+        ],
+        acceptedAnswers: ["SORRY PLEASE BE GOOD", "SORRY GOOD PLEASE", "I AM SORRY PLEASE"],
+        prompt: "Translate this sentence:",
+      },
+      {
+        id: "s-manners-3",
+        signs: [
+          { src: "/asl_videos/adjectives/good.mp4",     mediaType: "video", label: "GOOD" },
+          { src: "/asl_videos/adjectives/fine.mp4",     mediaType: "video", label: "FINE" },
+          { src: "/asl_videos/greetings/thank_you.mp4", mediaType: "video", label: "THANK YOU" },
+        ],
+        acceptedAnswers: ["GOOD AND FINE THANK YOU", "GOOD FINE THANK YOU", "I AM GOOD AND FINE THANK YOU"],
+        prompt: "What does this say?",
+      },
+    ],
   },
 
   "greetings-survival": {
@@ -159,6 +238,37 @@ export const lessonConfigs: Record<string, LessonConfig> = {
       { key: "sign_understand", label: "UNDERSTAND", mediaType: "video", mediaSrc: "/asl_videos/verbs/understand.mp4",   description: "Hold a bent index finger at your temple, then flick it upright — like a light-bulb moment." },
       { key: "sign_know",       label: "KNOW",       mediaType: "video", mediaSrc: "/asl_videos/verbs/know.mp4",         description: "Tap the fingertips of your flat hand to the side of your temple." },
       { key: "sign_forget",     label: "FORGET",     mediaType: "video", mediaSrc: "/asl_videos/verbs/forget.mp4",       description: "Drag an open hand across your forehead from one side to the other, closing into a fist as it leaves." },
+    ],
+    sentences: [
+      {
+        id: "s-survival-1",
+        signs: [
+          { src: "/asl_videos/daily_life/help.mp4",    mediaType: "video", label: "HELP" },
+          { src: "/asl_videos/daily_life/me.mp4",      mediaType: "video", label: "ME" },
+          { src: "/asl_videos/greetings/please.mp4",   mediaType: "video", label: "PLEASE" },
+        ],
+        acceptedAnswers: ["HELP ME PLEASE", "PLEASE HELP ME", "I NEED HELP PLEASE"],
+        prompt: "What is this person asking for?",
+      },
+      {
+        id: "s-survival-2",
+        signs: [
+          { src: "/asl_videos/adjectives/slow.mp4",    mediaType: "video", label: "SLOW" },
+          { src: "/asl_videos/greetings/please.mp4",   mediaType: "video", label: "PLEASE" },
+          { src: "/asl_videos/adjectives/again.mp4",   mediaType: "video", label: "AGAIN" },
+        ],
+        acceptedAnswers: ["SLOW DOWN PLEASE AGAIN", "PLEASE SLOW DOWN AND REPEAT", "SLOW PLEASE AGAIN", "GO SLOWER PLEASE AGAIN"],
+        prompt: "What are they asking you to do?",
+      },
+      {
+        id: "s-survival-3",
+        signs: [
+          { src: "/asl_videos/pronouns/you.mp4",       mediaType: "video", label: "YOU" },
+          { src: "/asl_videos/verbs/understand.mp4",   mediaType: "video", label: "UNDERSTAND" },
+        ],
+        acceptedAnswers: ["DO YOU UNDERSTAND", "YOU UNDERSTAND", "DO YOU UNDERSTAND ME"],
+        prompt: "What question is being asked?",
+      },
     ],
   },
 
@@ -180,6 +290,39 @@ export const lessonConfigs: Record<string, LessonConfig> = {
       { key: "sign_grandmother", label: "GRANDMOTHER", mediaType: "video", mediaSrc: "/asl_videos/relationships/grandmother.mp4", description: "Sign MOTHER, but arc the hand outward in two bouncing steps (one generation back)." },
       { key: "sign_grandfather", label: "GRANDFATHER", mediaType: "video", mediaSrc: "/asl_videos/relationships/grandfather.mp4", description: "Sign FATHER, but arc the hand outward in two bouncing steps (one generation back)." },
     ],
+    sentences: [
+      {
+        id: "s-family-1",
+        signs: [
+          { src: "/asl_videos/relationships/mother.mp4",  mediaType: "video", label: "MOTHER" },
+          { src: "/asl_videos/relationships/father.mp4",  mediaType: "video", label: "FATHER" },
+          { src: "/asl_videos/daily_life/home.mp4",       mediaType: "video", label: "HOME" },
+        ],
+        acceptedAnswers: ["MOTHER FATHER HOME", "MOM AND DAD ARE HOME", "MOTHER AND FATHER AT HOME", "MY PARENTS ARE HOME"],
+        prompt: "What does this sentence say?",
+      },
+      {
+        id: "s-family-2",
+        signs: [
+          { src: "/asl_videos/relationships/brother.mp4", mediaType: "video", label: "BROTHER" },
+          { src: "/asl_videos/relationships/sister.mp4",  mediaType: "video", label: "SISTER" },
+          { src: "/asl_videos/daily_life/school.mp4",     mediaType: "video", label: "SCHOOL" },
+        ],
+        acceptedAnswers: ["BROTHER SISTER SCHOOL", "MY BROTHER AND SISTER GO TO SCHOOL", "BROTHER AND SISTER AT SCHOOL"],
+        prompt: "Translate this sentence:",
+      },
+      {
+        id: "s-family-3",
+        signs: [
+          { src: "/asl_videos/daily_life/me.mp4",              mediaType: "video", label: "ME" },
+          { src: "/asl_videos/relationships/grandmother.mp4",  mediaType: "video", label: "GRANDMOTHER" },
+          { src: "/asl_videos/relationships/grandfather.mp4",  mediaType: "video", label: "GRANDFATHER" },
+          { src: "/asl_videos/verbs/meet.mp4",                 mediaType: "video", label: "MEET" },
+        ],
+        acceptedAnswers: ["I MEET MY GRANDMOTHER AND GRANDFATHER", "ME GRANDMOTHER GRANDFATHER MEET", "I AM MEETING MY GRANDPARENTS"],
+        prompt: "What is happening in this sentence?",
+      },
+    ],
   },
 
   "vocab-food": {
@@ -197,6 +340,38 @@ export const lessonConfigs: Record<string, LessonConfig> = {
       { key: "sign_egg",    label: "EGG",        mediaType: "video", mediaSrc: "/asl_videos/daily_life/egg.mp4",     description: "Both H-hands (two fingers out) come together and crack apart downward." },
       { key: "sign_fruit",  label: "FRUIT",      mediaType: "video", mediaSrc: "/asl_videos/daily_life/fruit.mp4",   description: "F-hand (pinched OK) at the cheek, twist the wrist forward and back." },
     ],
+    sentences: [
+      {
+        id: "s-food-1",
+        signs: [
+          { src: "/asl_videos/daily_life/me.mp4",        mediaType: "video", label: "ME" },
+          { src: "/asl_videos/verbs/eat.mp4",            mediaType: "video", label: "EAT" },
+          { src: "/asl_videos/daily_life/apple.mp4",     mediaType: "video", label: "APPLE" },
+        ],
+        acceptedAnswers: ["I EAT AN APPLE", "ME EAT APPLE", "I AM EATING AN APPLE", "I EAT APPLE"],
+        prompt: "What are they eating?",
+      },
+      {
+        id: "s-food-2",
+        signs: [
+          { src: "/asl_videos/verbs/eat.mp4",            mediaType: "video", label: "EAT" },
+          { src: "/asl_videos/daily_life/bread.mp4",     mediaType: "video", label: "BREAD" },
+          { src: "/asl_videos/daily_life/cheese.mp4",    mediaType: "video", label: "CHEESE" },
+        ],
+        acceptedAnswers: ["EAT BREAD AND CHEESE", "I EAT BREAD AND CHEESE", "EAT BREAD CHEESE"],
+        prompt: "What food is being described?",
+      },
+      {
+        id: "s-food-3",
+        signs: [
+          { src: "/asl_videos/pronouns/you.mp4",         mediaType: "video", label: "YOU" },
+          { src: "/asl_videos/verbs/eat.mp4",            mediaType: "video", label: "EAT" },
+          { src: "/asl_videos/daily_life/fruit.mp4",     mediaType: "video", label: "FRUIT" },
+        ],
+        acceptedAnswers: ["DO YOU EAT FRUIT", "YOU EAT FRUIT", "DO YOU LIKE FRUIT"],
+        prompt: "What question is being asked?",
+      },
+    ],
   },
 
   "vocab-drinks": {
@@ -213,6 +388,39 @@ export const lessonConfigs: Record<string, LessonConfig> = {
       { key: "sign_coffee", label: "COFFEE", mediaType: "video", mediaSrc: "/asl_videos/daily_life/coffee.mp4",    description: "Stack both fists and crank the top fist in a circle, like grinding coffee beans." },
       { key: "sign_tea",    label: "TEA",    mediaType: "video", mediaSrc: "/asl_videos/daily_life/tea.mp4",       description: "Pinch your dominant fingers together and dip them into the O-shape of your non-dominant hand, like a tea bag." },
       { key: "sign_juice",  label: "JUICE",  mediaType: "video", mediaSrc: "/asl_videos/daily_life/juice.mp4",     description: "Sign the letter J with a pinky finger near the side of the mouth." },
+    ],
+    sentences: [
+      {
+        id: "s-drinks-1",
+        signs: [
+          { src: "/asl_videos/daily_life/me.mp4",       mediaType: "video", label: "ME" },
+          { src: "/asl_videos/verbs/drink.mp4",         mediaType: "video", label: "DRINK" },
+          { src: "/asl_videos/daily_life/water.mp4",    mediaType: "video", label: "WATER" },
+          { src: "/asl_videos/greetings/please.mp4",    mediaType: "video", label: "PLEASE" },
+        ],
+        acceptedAnswers: ["I DRINK WATER PLEASE", "WATER PLEASE", "I WANT WATER PLEASE", "ME DRINK WATER PLEASE"],
+        prompt: "What is being requested?",
+      },
+      {
+        id: "s-drinks-2",
+        signs: [
+          { src: "/asl_videos/pronouns/you.mp4",        mediaType: "video", label: "YOU" },
+          { src: "/asl_videos/verbs/drink.mp4",         mediaType: "video", label: "DRINK" },
+          { src: "/asl_videos/daily_life/coffee.mp4",   mediaType: "video", label: "COFFEE" },
+        ],
+        acceptedAnswers: ["DO YOU DRINK COFFEE", "YOU DRINK COFFEE", "DO YOU LIKE COFFEE"],
+        prompt: "What question is being asked?",
+      },
+      {
+        id: "s-drinks-3",
+        signs: [
+          { src: "/asl_videos/daily_life/milk.mp4",     mediaType: "video", label: "MILK" },
+          { src: "/asl_videos/daily_life/tea.mp4",      mediaType: "video", label: "TEA" },
+          { src: "/asl_videos/daily_life/juice.mp4",    mediaType: "video", label: "JUICE" },
+        ],
+        acceptedAnswers: ["MILK TEA AND JUICE", "MILK TEA JUICE", "MILK AND TEA AND JUICE"],
+        prompt: "Name these three drinks:",
+      },
     ],
   },
 
@@ -254,6 +462,38 @@ export const lessonConfigs: Record<string, LessonConfig> = {
       { key: "sign_which", label: "WHICH", mediaType: "video", mediaSrc: "/asl_videos/questions/which.mp4", description: "Both A-hands (fists with thumbs up) alternately rock up and down, like weighing options." },
       { key: "sign_how2",  label: "HOW",   mediaType: "video", mediaSrc: "/asl_videos/questions/how.mp4",   description: "Place both bent hands together (knuckles touching), then rotate them outward." },
     ],
+    sentences: [
+      {
+        id: "s-questions-1",
+        signs: [
+          { src: "/asl_videos/daily_life/home.mp4",    mediaType: "video", label: "HOME" },
+          { src: "/asl_videos/pronouns/you.mp4",       mediaType: "video", label: "YOU" },
+          { src: "/asl_videos/questions/where.mp4",    mediaType: "video", label: "WHERE" },
+        ],
+        acceptedAnswers: ["WHERE IS YOUR HOME", "WHERE DO YOU LIVE", "YOUR HOME WHERE", "WHERE YOU LIVE"],
+        prompt: "What question are they asking?",
+      },
+      {
+        id: "s-questions-2",
+        signs: [
+          { src: "/asl_videos/daily_life/name.mp4",    mediaType: "video", label: "NAME" },
+          { src: "/asl_videos/pronouns/you.mp4",       mediaType: "video", label: "YOU" },
+          { src: "/asl_videos/questions/what.mp4",     mediaType: "video", label: "WHAT" },
+        ],
+        acceptedAnswers: ["WHAT IS YOUR NAME", "YOUR NAME WHAT", "WHAT YOUR NAME"],
+        prompt: "Translate this question:",
+      },
+      {
+        id: "s-questions-3",
+        signs: [
+          { src: "/asl_videos/daily_life/me.mp4",      mediaType: "video", label: "ME" },
+          { src: "/asl_videos/daily_life/home.mp4",    mediaType: "video", label: "HOME" },
+          { src: "/asl_videos/questions/when.mp4",     mediaType: "video", label: "WHEN" },
+        ],
+        acceptedAnswers: ["WHEN AM I GOING HOME", "WHEN DO I GO HOME", "ME HOME WHEN", "WHEN I GO HOME"],
+        prompt: "What is this person asking?",
+      },
+    ],
   },
 
   "conv-time": {
@@ -271,6 +511,39 @@ export const lessonConfigs: Record<string, LessonConfig> = {
       { key: "sign_tomorrow",  label: "TOMORROW",  mediaType: "video", mediaSrc: "/asl_videos/time/tomorrow.mp4",  description: "A-hand with thumb on cheek, arc forward away from the face." },
       { key: "sign_yesterday", label: "YESTERDAY", mediaType: "video", mediaSrc: "/asl_videos/time/yesterday.mp4", description: "A-hand with thumb on cheek, arc backward toward the back of your head." },
     ],
+    sentences: [
+      {
+        id: "s-time-1",
+        signs: [
+          { src: "/asl_videos/time/today.mp4",         mediaType: "video", label: "TODAY" },
+          { src: "/asl_videos/daily_life/me.mp4",      mediaType: "video", label: "ME" },
+          { src: "/asl_videos/daily_life/school.mp4",  mediaType: "video", label: "SCHOOL" },
+          { src: "/asl_videos/verbs/go.mp4",           mediaType: "video", label: "GO" },
+        ],
+        acceptedAnswers: ["TODAY I GO TO SCHOOL", "TODAY I AM GOING TO SCHOOL", "TODAY ME SCHOOL GO", "I GO TO SCHOOL TODAY"],
+        prompt: "Translate this sentence:",
+      },
+      {
+        id: "s-time-2",
+        signs: [
+          { src: "/asl_videos/time/tomorrow.mp4",      mediaType: "video", label: "TOMORROW" },
+          { src: "/asl_videos/daily_life/work.mp4",    mediaType: "video", label: "WORK" },
+          { src: "/asl_videos/daily_life/me.mp4",      mediaType: "video", label: "ME" },
+        ],
+        acceptedAnswers: ["TOMORROW I WORK", "I WORK TOMORROW", "TOMORROW ME WORK"],
+        prompt: "What is the plan?",
+      },
+      {
+        id: "s-time-3",
+        signs: [
+          { src: "/asl_videos/time/yesterday.mp4",     mediaType: "video", label: "YESTERDAY" },
+          { src: "/asl_videos/daily_life/me.mp4",      mediaType: "video", label: "ME" },
+          { src: "/asl_videos/daily_life/home.mp4",    mediaType: "video", label: "HOME" },
+        ],
+        acceptedAnswers: ["YESTERDAY I WAS HOME", "I WAS HOME YESTERDAY", "YESTERDAY ME HOME"],
+        prompt: "What happened yesterday?",
+      },
+    ],
   },
 
   "conv-directions": {
@@ -286,6 +559,39 @@ export const lessonConfigs: Record<string, LessonConfig> = {
       { key: "sign_school", label: "SCHOOL", mediaType: "video", mediaSrc: "/asl_videos/daily_life/school.mp4", description: "Clap both flat hands together twice." },
       { key: "sign_go",     label: "GO",     mediaType: "video", mediaSrc: "/asl_videos/verbs/go.mp4",          description: "Both index fingers circle forward and away from you." },
       { key: "sign_come",   label: "COME",   mediaType: "video", mediaSrc: "/asl_videos/verbs/come.mp4",        description: "Both index fingers circle toward you and inward." },
+    ],
+    sentences: [
+      {
+        id: "s-dir-1",
+        signs: [
+          { src: "/asl_videos/daily_life/me.mp4",      mediaType: "video", label: "ME" },
+          { src: "/asl_videos/verbs/go.mp4",           mediaType: "video", label: "GO" },
+          { src: "/asl_videos/daily_life/home.mp4",    mediaType: "video", label: "HOME" },
+        ],
+        acceptedAnswers: ["I GO HOME", "I AM GOING HOME", "ME GO HOME"],
+        prompt: "Where is this person going?",
+      },
+      {
+        id: "s-dir-2",
+        signs: [
+          { src: "/asl_videos/pronouns/you.mp4",       mediaType: "video", label: "YOU" },
+          { src: "/asl_videos/verbs/come.mp4",         mediaType: "video", label: "COME" },
+          { src: "/asl_videos/daily_life/school.mp4",  mediaType: "video", label: "SCHOOL" },
+        ],
+        acceptedAnswers: ["YOU COME TO SCHOOL", "COME TO SCHOOL", "YOU COME SCHOOL", "DO YOU COME TO SCHOOL"],
+        prompt: "Translate this sentence:",
+      },
+      {
+        id: "s-dir-3",
+        signs: [
+          { src: "/asl_videos/daily_life/me.mp4",      mediaType: "video", label: "ME" },
+          { src: "/asl_videos/verbs/go.mp4",           mediaType: "video", label: "GO" },
+          { src: "/asl_videos/daily_life/work.mp4",    mediaType: "video", label: "WORK" },
+          { src: "/asl_videos/time/now.mp4",           mediaType: "video", label: "NOW" },
+        ],
+        acceptedAnswers: ["I GO TO WORK NOW", "I AM GOING TO WORK NOW", "ME GO WORK NOW", "NOW I GO TO WORK"],
+        prompt: "What are they doing right now?",
+      },
     ],
   },
 };

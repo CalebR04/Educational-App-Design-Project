@@ -220,6 +220,7 @@ function ComingSoonCard({ icon, color, title, desc }: { icon: React.ReactNode; c
   );
 }
 
+
 function LessonCard({ lesson, mounted, onReset }: { lesson: LessonWithStatus; mounted: boolean; onReset: () => void }) {
   const isCompleted  = lesson.status === "Completed";
   const isInProgress = lesson.status === "In Progress";

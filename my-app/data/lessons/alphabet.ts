@@ -1,5 +1,5 @@
 // --- TYPES ---
-export type StepType = "teach" | "quiz" | "match" | "synthesize" | "type";
+export type StepType = "teach" | "quiz" | "match" | "synthesize" | "type" | "sentence";
 
 export interface LessonStep {
   id: string;
@@ -13,6 +13,7 @@ export interface LessonStep {
   correctAnswer?: string;
   acceptedAnswers?: string[];
   wordKey?: string;
+  sentenceMedia?: Array<{ src: string; mediaType: "image" | "video"; label: string }>;
 }
 
 export interface Lesson {

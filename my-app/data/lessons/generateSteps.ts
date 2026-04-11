@@ -1,5 +1,5 @@
 import type { LessonStep } from "./alphabet";
-import type { VocabItem } from "./lessonConfigs";
+import type { VocabItem, SentenceItem } from "./lessonConfigs";
 
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -111,6 +111,26 @@ function makeTypeStep(item: VocabItem, idSuffix = ""): LessonStep {
   };
 }
 
+function makeSentenceStep(s: SentenceItem, idSuffix = ""): LessonStep {
+  const prompts = [
+    s.prompt ?? "Translate this sentence:",
+    "What does this ASL sentence mean?",
+    "Type the English translation:",
+  ];
+  return {
+    id: `sentence-${s.id}${idSuffix}`,
+    type: "sentence",
+    prompt: prompts[0],
+    sentenceMedia: s.signs.map(sign => ({
+      src: sign.src,
+      mediaType: sign.mediaType,
+      label: sign.label,
+    })),
+    correctAnswer: s.acceptedAnswers[0],
+    acceptedAnswers: s.acceptedAnswers,
+  };
+}
+
 function makeSynthesizeStep(word: string, idSuffix = ""): LessonStep {
   const letters = word.toUpperCase().split("");
   const prompts = ["What does this spell?", "Fingerspell this word — what is it?", "Read each letter and type the word:"];
@@ -168,7 +188,7 @@ function filterWordsByLetters(words: string[], available: Set<string>): string[]
  *
  * Final review (if >1 chunk): quiz + type mix over all vocab
  */
-export function generateSteps(vocab: VocabItem[]): LessonStep[] {
+export function generateSteps(vocab: VocabItem[], sentences: SentenceItem[] = []): LessonStep[] {
   if (!vocab.length) return [];
 
   const isLetterLesson = vocab[0].key.startsWith("letter_");
@@ -180,41 +200,41 @@ export function generateSteps(vocab: VocabItem[]): LessonStep[] {
   const steps: LessonStep[] = [];
   const seen: VocabItem[]   = [];
 
-  // Word pool augmented with A-M for N-Z lesson (students already know A-M)
   const AM_LETTERS = new Set("ABCDEFGHIJKLM".split(""));
 
   for (let ci = 0; ci < chunks.length; ci++) {
     const chunk = chunks[ci];
+    const isFirstChunk = ci === 0;
 
     // Teach
     for (const item of chunk) steps.push(makeTeachStep(item));
     seen.push(...chunk);
 
-    // Quiz (shuffled within chunk)
+    // First chunk: quiz + match only (select-only — no typing yet)
+    // Later chunks: quiz + match + type questions
     for (const item of shuffle(chunk)) {
       steps.push(makeQuizStep(item, seen, `-c${ci}`));
     }
 
-    // Match (needs ≥4 seen items)
     if (seen.length >= 4) {
       for (const item of shuffle(chunk)) {
         steps.push(makeMatchStep(item, seen, `-c${ci}`));
       }
     }
 
-    // Type (2 random items from chunk)
-    for (const item of shuffle(chunk).slice(0, 2)) {
-      steps.push(makeTypeStep(item, `-c${ci}`));
+    // Type questions start from chunk 2 onwards
+    if (!isFirstChunk) {
+      for (const item of shuffle(chunk)) {
+        steps.push(makeTypeStep(item, `-c${ci}`));
+      }
     }
 
-    // Synthesize (letter lessons only, when enough letters seen)
+    // Synthesize (letter lessons only, ≥5 letters seen)
     if (isLetterLesson && seen.length >= 5) {
       const availableLetters = new Set(seen.map(v => v.label.toUpperCase()));
       if (isNZLesson) AM_LETTERS.forEach(l => availableLetters.add(l));
-
-      const wordPool = isNZLesson ? WORDS_ALL : WORDS_AM;
+      const wordPool   = isNZLesson ? WORDS_ALL : WORDS_AM;
       const candidates = shuffle(filterWordsByLetters(wordPool, availableLetters));
-      // 2 words per chunk: 1 short (3-letter) + 1 medium (4+ letter) if available
       const short  = candidates.find(w => w.length === 3);
       const medium = candidates.find(w => w.length >= 4 && w.length <= 5);
       const wordsToUse = shuffle([short, medium].filter(Boolean) as string[]).slice(0, 2);
@@ -228,7 +248,7 @@ export function generateSteps(vocab: VocabItem[]): LessonStep[] {
   if (chunks.length > 1) {
     const reviewItems = shuffle(shuffledVocab);
 
-    // Quiz half, type the other half — interleaved
+    // Mix: type → match → quiz pattern — heavier on type in final review
     reviewItems.forEach((item, i) => {
       if (i % 3 === 0) {
         steps.push(makeTypeStep(item, `-final`));
@@ -250,6 +270,11 @@ export function generateSteps(vocab: VocabItem[]): LessonStep[] {
         steps.push(makeSynthesizeStep(word, `-final-${i}`));
       }
     }
+  }
+
+  // Sentence steps at the very end (shuffled, all of them)
+  for (const [i, s] of shuffle(sentences).entries()) {
+    steps.push(makeSentenceStep(s, `-${i}`));
   }
 
   return steps;
