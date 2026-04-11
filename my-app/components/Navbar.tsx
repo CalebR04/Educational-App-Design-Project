@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Settings, LogOut, UserPlus, User } from "lucide-react";
+import { Settings, LogOut, UserPlus, User, SlidersHorizontal } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 type NavbarProps = {
@@ -102,7 +102,7 @@ export default function Navbar({ active }: NavbarProps) {
             <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-linear-to-br from-blue-500 to-purple-500 text-lg font-bold text-white">
               SQ
             </div>
-            <span className="text-2xl font-bold text-[#0f172a]">SignQuest</span>
+            <span className="text-2xl font-bold text-gray-900">SignQuest</span>
           </div>
 
           {/* Nav tabs */}
@@ -116,7 +116,7 @@ export default function Navbar({ active }: NavbarProps) {
                   className={`rounded-xl px-4 py-3 text-lg font-semibold transition ${
                     isActive
                       ? "bg-blue-100 text-blue-600"
-                      : "text-[#334155] hover:bg-gray-50 hover:text-[#0f172a]"
+                      : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
                   }`}
                 >
                   {tab.name}
@@ -164,13 +164,22 @@ export default function Navbar({ active }: NavbarProps) {
                 {/* Actions */}
                 <div className="py-1">
                   {displayName ? (
-                    <button
-                      onClick={handleLogout}
-                      className="flex w-full items-center gap-3 px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
-                    >
-                      <LogOut className="h-4 w-4" />
-                      Log Out
-                    </button>
+                    <>
+                      <button
+                        onClick={() => { router.push("/profile/settings"); setOpen(false); }}
+                        className="flex w-full items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                      >
+                        <SlidersHorizontal className="h-4 w-4" />
+                        Profile Settings
+                      </button>
+                      <button
+                        onClick={handleLogout}
+                        className="flex w-full items-center gap-3 px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
+                      >
+                        <LogOut className="h-4 w-4" />
+                        Log Out
+                      </button>
+                    </>
                   ) : (
                     <>
                       <button
