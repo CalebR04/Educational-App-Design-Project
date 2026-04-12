@@ -1,4 +1,4 @@
-
+#use python 
 import os
 os.environ['GLOG_minloglevel'] = '3'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -17,7 +17,7 @@ torchvision.ops.nms = cpu_nms
 
 #MODEL_PATH = Path('C:/Users/Adam/Desktop/New folder/School/Educational_App_Development/asl_yolo/runs/asl_yolo11/weights/best.pt')
 MODEL_PATH = Path(
-    "C:/Users/Adam/Desktop/New folder/School/Educational_App_Development/Educational-App-Design-Project/ASL_Detector/asl_yolo_roboflow/runs/asl_roboflow2/weights/best.pt"
+    "C:/Users/Adam/Desktop/New folder/School/Educational_App_Development/Educational-App-Design-Project/ASL_Detector/asl_yolo_roboflow/runs/asl_3/weights/best.pt"
 )
 MEDIAPIPE_MODEL_PATH = Path(
     "C:/Users/Adam/Desktop/New folder/School/Educational_App_Development/Educational-App-Design-Project/ASL_Detector/hand_landmarker.task"

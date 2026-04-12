@@ -4,23 +4,37 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Navbar from "../../components/Navbar";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-const CAPTURE_INTERVAL = 100;
+const CAPTURE_INTERVAL = 100;   // ms between frames
+const SEND_WIDTH= 480;   // downscale before sending — huge payload reduction
+const JPEG_QUALITY = 0.7;   // smaller payload, model doesn't care
 
 export default function TranslatorPage() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const streamRef  = useRef<MediaStream | null>(null);
+  const timeoutRef= useRef<NodeJS.Timeout | null>(null);
+  const canvasRef= useRef<HTMLCanvasElement | null>(null);   // reused canvas
+  const detectingRef = useRef(false);                            // for the loop closure
+
   const lastLetterRef = useRef<string | null>(null);
-  const holdCountRef = useRef(0);
+  const holdCountRef     = useRef(0);
+  const requestInFlightRef  = useRef(false);
   const HOLD_FRAMES = 15;
 
-  const [cameraOn, setCameraOn] = useState(false);
-  const [error, setError] = useState("");
-  const [detecting, setDetecting] = useState(false);
-  const [letter, setLetter] = useState<string | null>(null);
+  const [cameraOn, setCameraOn]= useState(false);
+  const [error, setError]= useState("");
+  const [detecting, setDetecting]= useState(false);
+  const [letter, setLetter]= useState<string | null>(null);
   const [confidence, setConfidence] = useState<number | null>(null);
   const [word, setWord] = useState<string>("");
   const [holding, setHoldProgress] = useState(0);
+
+  // Lazily create one canvas and reuse it forever
+  const getCanvas = () => {
+    if (!canvasRef.current) {
+      canvasRef.current = document.createElement("canvas");
+    }
+    return canvasRef.current;
+  };
 
   const capture_and_detect = useCallback(async () => {
     const video = videoRef.current;
@@ -34,52 +48,66 @@ export default function TranslatorPage() {
       return;
     }
 
-    const offscreen = document.createElement("canvas");
-    offscreen.width = video.videoWidth;
-    offscreen.height = video.videoHeight;
-
-    const ctx = offscreen.getContext("2d");
-    if (!ctx) return;
-
-    ctx.drawImage(video, 0, 0);
-
-    const b64 = offscreen.toDataURL("image/jpeg", 0.8);
-
     try {
+      // Downscale: keep aspect ratio, target SEND_WIDTH wide
+      const scale = SEND_WIDTH / video.videoWidth;
+      const w = SEND_WIDTH;
+      const h = Math.round(video.videoHeight * scale);
+
+      const canvas = getCanvas();
+      if (canvas.width !== w || canvas.height !== h) {
+        canvas.width  = w;
+        canvas.height = h;
+      }
+
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        return;
+      }
+
+      ctx.drawImage(video, 0, 0, w, h);
+      const b64 = canvas.toDataURL("image/jpeg", JPEG_QUALITY);
+
       const res = await fetch(`${API_URL}/detect`, {
-        method: "POST",
+        method:  "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image: b64 }),
+        body:    JSON.stringify({ image: b64, add_to_word: true, want_keypoints: false }),
       });
 
       if (!res.ok) return;
 
       const data = await res.json();
 
-      setLetter(data.letter);
-      setConfidence(data.confidence);
-      setWord(data.word);
+      setLetter(data.letter ?? null);
+      setConfidence(data.confidence ?? null);
+      setWord(data.word ?? "");
 
       if (data.letter) {
         if (data.letter === lastLetterRef.current) {
-          holdCountRef.current = Math.min(
-            holdCountRef.current + 1,
-            HOLD_FRAMES
-          );
+          holdCountRef.current = Math.min(holdCountRef.current + 1, HOLD_FRAMES);
         } else {
-          holdCountRef.current = 0;
+          holdCountRef.current = 1;
           lastLetterRef.current = data.letter;
         }
-
         setHoldProgress(holdCountRef.current / HOLD_FRAMES);
       } else {
-        holdCountRef.current = 0;
+        holdCountRef.current  = 0;
+        lastLetterRef.current = null;
         setHoldProgress(0);
       }
     } catch (err) {
       console.error(err);
     }
   }, []);
+
+  // Recursive setTimeout loop — won't pile up if backend hiccups
+  const scheduleNext = useCallback(() => {
+    if (!detectingRef.current) return;
+    timeoutRef.current = setTimeout(async () => {
+      await capture_and_detect();
+      scheduleNext();
+    }, CAPTURE_INTERVAL);
+  }, [capture_and_detect]);
 
   const startCamera = async () => {
     try {
@@ -92,7 +120,7 @@ export default function TranslatorPage() {
       }
 
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "user" },
+        video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
         audio: false,
       });
 
@@ -121,18 +149,19 @@ export default function TranslatorPage() {
 
     setError("");
     setDetecting(true);
+    detectingRef.current = true;
 
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
     }
-
-    intervalRef.current = setInterval(capture_and_detect, CAPTURE_INTERVAL);
+    scheduleNext();
   };
 
   const stopDetection = () => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
+    detectingRef.current = false;
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
     }
 
     setDetecting(false);
@@ -145,12 +174,12 @@ export default function TranslatorPage() {
     try {
       await fetch(`${API_URL}/word`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers:{ "Content-Type": "application/json" },
         body: JSON.stringify({ action: "clear" }),
       });
 
       setWord("");
-      holdCountRef.current = 0;
+      holdCountRef.current  = 0;
       lastLetterRef.current = null;
       setHoldProgress(0);
     } catch (err) {
@@ -162,7 +191,7 @@ export default function TranslatorPage() {
     try {
       const res = await fetch(`${API_URL}/word`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers:{ "Content-Type": "application/json" },
         body: JSON.stringify({ action: "backspace" }),
       });
 
@@ -176,9 +205,10 @@ export default function TranslatorPage() {
   };
 
   const stopCamera = () => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
+    detectingRef.current = false;
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
     }
 
     streamRef.current?.getTracks().forEach((track) => track.stop());
@@ -194,15 +224,17 @@ export default function TranslatorPage() {
     setLetter(null);
     setConfidence(null);
     setHoldProgress(0);
-    holdCountRef.current = 0;
+    holdCountRef.current  = 0;
     lastLetterRef.current = null;
   };
 
   useEffect(() => {
     return () => {
+      detectingRef.current = false;
+      requestInFlightRef.current = false;
       streamRef.current?.getTracks().forEach((track) => track.stop());
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
       }
     };
   }, []);
