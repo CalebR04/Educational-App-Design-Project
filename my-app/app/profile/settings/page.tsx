@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import { createClient } from "@/lib/supabase/client";
@@ -15,6 +15,13 @@ export default function ProfileSettingsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [userId, setUserId] = useState<string | null>(null);
+
+  // Saved (original) values
+  const [savedFullName, setSavedFullName] = useState("");
+  const [savedUsername, setSavedUsername] = useState("");
+  const [savedAvatarUrl, setSavedAvatarUrl] = useState<string | null>(null);
+
+  // Working values
   const [fullName, setFullName] = useState("");
   const [username, setUsername] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -24,6 +31,15 @@ export default function ProfileSettingsPage() {
   const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "available" | "taken">("idle");
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  // Unsaved changes modal
+  const [showUnsavedModal, setShowUnsavedModal] = useState(false);
+  const pendingNavRef = useRef<(() => void) | null>(null);
+
+  const hasChanges =
+    fullName !== savedFullName ||
+    username !== savedUsername ||
+    avatarFile !== null;
 
   useEffect(() => {
     async function load() {
@@ -41,10 +57,22 @@ export default function ProfileSettingsPage() {
         setFullName(profile.full_name ?? "");
         setUsername(profile.username ?? "");
         setAvatarUrl(profile.avatar_url ?? null);
+        setSavedFullName(profile.full_name ?? "");
+        setSavedUsername(profile.username ?? "");
+        setSavedAvatarUrl(profile.avatar_url ?? null);
       }
     }
     load();
   }, [router]);
+
+  // Warn on browser back / tab close
+  useEffect(() => {
+    function handleBeforeUnload(e: BeforeUnloadEvent) {
+      if (hasChanges) e.preventDefault();
+    }
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [hasChanges]);
 
   // Debounced username uniqueness check
   useEffect(() => {
@@ -69,6 +97,31 @@ export default function ProfileSettingsPage() {
     setAvatarPreview(URL.createObjectURL(file));
   }
 
+  // Navigate with unsaved-changes guard
+  const guardedNavigate = useCallback((nav: () => void) => {
+    if (hasChanges) {
+      pendingNavRef.current = nav;
+      setShowUnsavedModal(true);
+    } else {
+      nav();
+    }
+  }, [hasChanges]);
+
+  function handleDiscard() {
+    setShowUnsavedModal(false);
+    const nav = pendingNavRef.current;
+    pendingNavRef.current = null;
+    nav?.();
+  }
+
+  async function handleSaveAndNavigate() {
+    await handleSave();
+    setShowUnsavedModal(false);
+    const nav = pendingNavRef.current;
+    pendingNavRef.current = null;
+    nav?.();
+  }
+
   async function handleSave() {
     if (!userId) return;
     if (usernameStatus === "taken") { setSaveMessage({ type: "error", text: "That display name is already taken." }); return; }
@@ -77,7 +130,6 @@ export default function ProfileSettingsPage() {
 
     let newAvatarUrl = avatarUrl;
 
-    // Upload avatar if changed
     if (avatarFile) {
       const ext = avatarFile.name.split(".").pop();
       const path = `${userId}/avatar.${ext}`;
@@ -106,7 +158,10 @@ export default function ProfileSettingsPage() {
       setSaveMessage({ type: "error", text: error.message });
     } else {
       setAvatarUrl(newAvatarUrl);
+      setSavedAvatarUrl(newAvatarUrl);
       setAvatarFile(null);
+      setSavedFullName(fullName.trim());
+      setSavedUsername(username.trim());
       setSaveMessage({ type: "success", text: "Settings saved!" });
     }
     setSaving(false);
@@ -121,7 +176,7 @@ export default function ProfileSettingsPage() {
       <main className="max-w-xl mx-auto px-4 py-8">
         {/* Back */}
         <button
-          onClick={() => router.back()}
+          onClick={() => guardedNavigate(() => router.back())}
           className="flex items-center gap-1 text-gray-500 hover:text-gray-800 mb-6 transition-colors text-sm font-semibold"
         >
           <ChevronLeft className="h-4 w-4" /> Back
@@ -154,10 +209,7 @@ export default function ProfileSettingsPage() {
             </div>
             <div>
               <p className="font-semibold text-gray-900">{fullName || "Your Name"}</p>
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="text-sm text-blue-500 hover:underline mt-0.5"
-              >
+              <button onClick={() => fileInputRef.current?.click()} className="text-sm text-blue-500 hover:underline mt-0.5">
                 Change picture
               </button>
             </div>
@@ -175,7 +227,7 @@ export default function ProfileSettingsPage() {
             />
           </div>
 
-          {/* Display name / username */}
+          {/* Display name */}
           <div>
             <label className="mb-1.5 block text-sm font-semibold text-gray-700">
               Display Name <span className="text-xs font-normal text-gray-400">(shown on leaderboards)</span>
@@ -206,7 +258,6 @@ export default function ProfileSettingsPage() {
         {/* ── Accessibility section ── */}
         <div className="bg-white border-2 border-gray-200 rounded-2xl p-6 mb-6">
           <h2 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-5">Accessibility</h2>
-
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               {darkMode ? <Moon className="h-5 w-5 text-blue-500" /> : <Sun className="h-5 w-5 text-yellow-500" />}
@@ -219,14 +270,12 @@ export default function ProfileSettingsPage() {
               onClick={toggleDarkMode}
               className={`relative w-12 h-6 rounded-full transition-colors duration-200 ${darkMode ? "bg-blue-500" : "bg-gray-300"}`}
             >
-              <span
-                className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${darkMode ? "translate-x-6" : "translate-x-0"}`}
-              />
+              <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${darkMode ? "translate-x-6" : "translate-x-0"}`} />
             </button>
           </div>
         </div>
 
-        {/* Save button */}
+        {/* Save */}
         {saveMessage && (
           <p className={`mb-3 text-sm font-medium px-4 py-3 rounded-xl ${
             saveMessage.type === "success" ? "bg-green-50 text-green-600" : "bg-red-50 text-red-600"
@@ -242,6 +291,42 @@ export default function ProfileSettingsPage() {
           {saving ? "Saving..." : "Save Changes"}
         </button>
       </main>
+
+      {/* Unsaved changes modal */}
+      {showUnsavedModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+          <div className="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-yellow-100 text-2xl mx-auto mb-4">
+              ⚠️
+            </div>
+            <h2 className="text-xl font-black text-gray-900 mb-2">Unsaved Changes</h2>
+            <p className="text-gray-500 text-sm mb-6">
+              You have unsaved changes. Would you like to save them before leaving?
+            </p>
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={handleSaveAndNavigate}
+                disabled={saving}
+                className="w-full rounded-2xl bg-blue-500 hover:bg-blue-600 py-3 font-bold text-white transition disabled:opacity-50"
+              >
+                {saving ? "Saving..." : "Save & Leave"}
+              </button>
+              <button
+                onClick={handleDiscard}
+                className="w-full rounded-2xl border-2 border-red-200 py-3 font-bold text-red-600 hover:bg-red-50 transition"
+              >
+                Discard Changes
+              </button>
+              <button
+                onClick={() => { setShowUnsavedModal(false); pendingNavRef.current = null; }}
+                className="w-full rounded-2xl border-2 border-gray-200 py-3 font-bold text-gray-500 hover:bg-gray-50 transition"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { LogOut } from "lucide-react";
+import { addGameScore, fetchGameHighScores, updateGameHighScore } from "@/lib/supabase/userStats";
 
 const allLetters = [
   "a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z"
@@ -57,14 +58,13 @@ export default function MemoryGame() {
   const [showExitConfirm, setShowExitConfirm] = useState(false);
 
   useEffect(() => {
-    const savedScore = localStorage.getItem("memoryHighScore");
-    if (savedScore) setHighScore(Number(savedScore));
+    fetchGameHighScores().then(s => setHighScore(s.memoryHigh));
   }, []);
 
   useEffect(() => {
     if (score > highScore) {
       setHighScore(score);
-      localStorage.setItem("memoryHighScore", score.toString());
+      updateGameHighScore("memory", score);
     }
   }, [score]);
 
@@ -114,8 +114,6 @@ export default function MemoryGame() {
           setIsChecking(false);
 
           if (newCards.every((c) => c.matched)) {
-            const wins = Number(localStorage.getItem("memoryWins") || 0);
-            localStorage.setItem("memoryWins", (wins + 1).toString());
             setTimeout(nextLevel, 400);
           }
         }, 600);
@@ -134,6 +132,7 @@ export default function MemoryGame() {
   useEffect(() => {
     if (moves <= 0 && !gameOver) {
       setGameOver(true);
+      if (score > 0) addGameScore(score, "memory");
       setScore(0);
       setIsChecking(false);
     }

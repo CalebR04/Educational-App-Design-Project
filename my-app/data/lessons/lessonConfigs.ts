@@ -4,6 +4,12 @@ export interface VocabItem {
   mediaType: "image" | "video";
   mediaSrc: string;
   description: string;
+  /** Linguistic parameters — teaches the science of ASL beyond word matching */
+  parameters?: {
+    handshape: string;  // e.g. "Open-B", "Fist-A", "1-hand"
+    location: string;   // e.g. "Forehead", "Chin", "Neutral Space", "Chest"
+    movement: string;   // e.g. "Circular", "Twist", "Tap", "Sweep", "Arc"
+  };
 }
 
 export interface SentenceSign {
@@ -133,12 +139,12 @@ export const lessonConfigs: Record<string, LessonConfig> = {
     duration: "10 min",
     tags: ["Hello", "Introductions", "Greetings"],
     vocab: [
-      { key: "sign_hello",   label: "HELLO",        mediaType: "video", mediaSrc: "/asl_videos/greetings/hello.mp4",   description: "Open your dominant hand at your temple and sweep it outward, like a relaxed salute." },
-      { key: "sign_morning", label: "GOOD MORNING", mediaType: "video", mediaSrc: "/asl_videos/greetings/morning.mp4", description: "Flat dominant hand rests in the crook of the non-dominant arm, then rises upward like the sun." },
+      { key: "sign_hello",   label: "HELLO",        mediaType: "video", mediaSrc: "/asl_videos/greetings/hello.mp4",   description: "Open your dominant hand at your temple and sweep it outward, like a relaxed salute.", parameters: { handshape: "Open-B", location: "Temple", movement: "Outward sweep" } },
+      { key: "sign_morning", label: "GOOD MORNING", mediaType: "video", mediaSrc: "/asl_videos/greetings/morning.mp4", description: "Flat dominant hand rests in the crook of the non-dominant arm, then rises upward like the sun.", parameters: { handshape: "Flat-B", location: "Non-dominant forearm", movement: "Arc upward" } },
       { key: "sign_how",     label: "HOW",          mediaType: "video", mediaSrc: "/asl_videos/questions/how.mp4",     description: "Place both bent hands together (knuckles touching), then rotate them forward and outward." },
-      { key: "sign_name",    label: "NAME",         mediaType: "video", mediaSrc: "/asl_videos/daily_life/name.mp4",   description: "Form H-hands (index and middle fingers extended) and tap them together twice in an X pattern." },
-      { key: "sign_nice",    label: "NICE",         mediaType: "video", mediaSrc: "/asl_videos/adjectives/nice.mp4",   description: "Slide the flat palm of your dominant hand across the upturned flat palm of your other hand." },
-      { key: "sign_meet",    label: "MEET",         mediaType: "video", mediaSrc: "/asl_videos/verbs/meet.mp4",        description: "Both index fingers point upward and face each other, then bring them together to meet in the middle." },
+      { key: "sign_name",    label: "NAME",         mediaType: "video", mediaSrc: "/asl_videos/daily_life/name.mp4",   description: "Form H-hands (index and middle fingers extended) and tap them together twice in an X pattern.", parameters: { handshape: "H-hand", location: "Neutral space", movement: "Cross-tap" } },
+      { key: "sign_nice",    label: "NICE",         mediaType: "video", mediaSrc: "/asl_videos/adjectives/nice.mp4",   description: "Slide the flat palm of your dominant hand across the upturned flat palm of your other hand.", parameters: { handshape: "Flat-B", location: "Non-dominant palm", movement: "Forward slide" } },
+      { key: "sign_meet",    label: "MEET",         mediaType: "video", mediaSrc: "/asl_videos/verbs/meet.mp4",        description: "Both index fingers point upward and face each other, then bring them together to meet in the middle.", parameters: { handshape: "1-hand (both)", location: "Neutral space", movement: "Hands come together" } },
     ],
     sentences: [
       {
@@ -232,12 +238,12 @@ export const lessonConfigs: Record<string, LessonConfig> = {
     duration: "10 min",
     tags: ["Help", "Understand", "Essential"],
     vocab: [
-      { key: "sign_help",       label: "HELP",       mediaType: "video", mediaSrc: "/asl_videos/daily_life/help.mp4",     description: "Make a thumbs-up with your dominant hand and rest it on your flat non-dominant palm, then lift both hands upward together." },
-      { key: "sign_again",      label: "AGAIN",      mediaType: "video", mediaSrc: "/asl_videos/adjectives/again.mp4",    description: "Curve your dominant hand and arc it down to tap the flat palm of your non-dominant hand." },
-      { key: "sign_slow",       label: "SLOW",       mediaType: "video", mediaSrc: "/asl_videos/adjectives/slow.mp4",     description: "Slowly drag the dominant hand up the back of the non-dominant hand from fingertips to wrist." },
-      { key: "sign_understand", label: "UNDERSTAND", mediaType: "video", mediaSrc: "/asl_videos/verbs/understand.mp4",   description: "Hold a bent index finger at your temple, then flick it upright — like a light-bulb moment." },
-      { key: "sign_know",       label: "KNOW",       mediaType: "video", mediaSrc: "/asl_videos/verbs/know.mp4",         description: "Tap the fingertips of your flat hand to the side of your temple." },
-      { key: "sign_forget",     label: "FORGET",     mediaType: "video", mediaSrc: "/asl_videos/verbs/forget.mp4",       description: "Drag an open hand across your forehead from one side to the other, closing into a fist as it leaves." },
+      { key: "sign_help",       label: "HELP",       mediaType: "video", mediaSrc: "/asl_videos/daily_life/help.mp4",     description: "Make a thumbs-up with your dominant hand and rest it on your flat non-dominant palm, then lift both hands upward together.", parameters: { handshape: "A-hand (thumb-up)", location: "Non-dominant palm", movement: "Upward lift" } },
+      { key: "sign_again",      label: "AGAIN",      mediaType: "video", mediaSrc: "/asl_videos/adjectives/again.mp4",    description: "Curve your dominant hand and arc it down to tap the flat palm of your non-dominant hand.", parameters: { handshape: "Bent-B", location: "Non-dominant palm", movement: "Arc-and-tap" } },
+      { key: "sign_slow",       label: "SLOW",       mediaType: "video", mediaSrc: "/asl_videos/adjectives/slow.mp4",     description: "Slowly drag the dominant hand up the back of the non-dominant hand from fingertips to wrist.", parameters: { handshape: "Open-5", location: "Back of non-dominant hand", movement: "Slow upward drag" } },
+      { key: "sign_understand", label: "UNDERSTAND", mediaType: "video", mediaSrc: "/asl_videos/verbs/understand.mp4",   description: "Hold a bent index finger at your temple, then flick it upright — like a light-bulb moment.", parameters: { handshape: "Bent-1", location: "Temple", movement: "Flick upright" } },
+      { key: "sign_know",       label: "KNOW",       mediaType: "video", mediaSrc: "/asl_videos/verbs/know.mp4",         description: "Tap the fingertips of your flat hand to the side of your temple.", parameters: { handshape: "Flat-B", location: "Temple", movement: "Tap" } },
+      { key: "sign_forget",     label: "FORGET",     mediaType: "video", mediaSrc: "/asl_videos/verbs/forget.mp4",       description: "Drag an open hand across your forehead from one side to the other, closing into a fist as it leaves.", parameters: { handshape: "Open-5 → Fist-A", location: "Forehead", movement: "Drag and close" } },
     ],
     sentences: [
       {
@@ -283,10 +289,10 @@ export const lessonConfigs: Record<string, LessonConfig> = {
     tags: ["Family", "Relationships"],
     tip: "Signs above the nose are typically masculine; signs near or below the chin are typically feminine.",
     vocab: [
-      { key: "sign_mother",      label: "MOTHER",      mediaType: "video", mediaSrc: "/asl_videos/relationships/mother.mp4",      description: "Open hand, thumb touches your chin and fans out — chin area is the feminine zone." },
-      { key: "sign_father",      label: "FATHER",      mediaType: "video", mediaSrc: "/asl_videos/relationships/father.mp4",      description: "Open hand, thumb touches your forehead and fans out — forehead is the masculine zone." },
-      { key: "sign_brother",     label: "BROTHER",     mediaType: "video", mediaSrc: "/asl_videos/relationships/brother.mp4",     description: "Sign BOY (flat hand near forehead), then bring both index fingers together horizontally." },
-      { key: "sign_sister",      label: "SISTER",      mediaType: "video", mediaSrc: "/asl_videos/relationships/sister.mp4",      description: "Sign GIRL (thumb on cheek), then bring both index fingers together horizontally." },
+      { key: "sign_mother",      label: "MOTHER",      mediaType: "video", mediaSrc: "/asl_videos/relationships/mother.mp4",      description: "Open hand, thumb touches your chin and fans out — chin area is the feminine zone.", parameters: { handshape: "Open-5", location: "Chin", movement: "Thumb tap with fan" } },
+      { key: "sign_father",      label: "FATHER",      mediaType: "video", mediaSrc: "/asl_videos/relationships/father.mp4",      description: "Open hand, thumb touches your forehead and fans out — forehead is the masculine zone.", parameters: { handshape: "Open-5", location: "Forehead", movement: "Thumb tap with fan" } },
+      { key: "sign_brother",     label: "BROTHER",     mediaType: "video", mediaSrc: "/asl_videos/relationships/brother.mp4",     description: "Sign BOY (flat hand near forehead), then bring both index fingers together horizontally.", parameters: { handshape: "L-hand → 1-hand (both)", location: "Forehead → Neutral space", movement: "Lower and bring together" } },
+      { key: "sign_sister",      label: "SISTER",      mediaType: "video", mediaSrc: "/asl_videos/relationships/sister.mp4",      description: "Sign GIRL (thumb on cheek), then bring both index fingers together horizontally.", parameters: { handshape: "A-hand → 1-hand (both)", location: "Cheek → Neutral space", movement: "Slide down and bring together" } },
       { key: "sign_grandmother", label: "GRANDMOTHER", mediaType: "video", mediaSrc: "/asl_videos/relationships/grandmother.mp4", description: "Sign MOTHER, but arc the hand outward in two bouncing steps (one generation back)." },
       { key: "sign_grandfather", label: "GRANDFATHER", mediaType: "video", mediaSrc: "/asl_videos/relationships/grandfather.mp4", description: "Sign FATHER, but arc the hand outward in two bouncing steps (one generation back)." },
     ],
@@ -559,6 +565,7 @@ export const lessonConfigs: Record<string, LessonConfig> = {
       { key: "sign_school", label: "SCHOOL", mediaType: "video", mediaSrc: "/asl_videos/daily_life/school.mp4", description: "Clap both flat hands together twice." },
       { key: "sign_go",     label: "GO",     mediaType: "video", mediaSrc: "/asl_videos/verbs/go.mp4",          description: "Both index fingers circle forward and away from you." },
       { key: "sign_come",   label: "COME",   mediaType: "video", mediaSrc: "/asl_videos/verbs/come.mp4",        description: "Both index fingers circle toward you and inward." },
+      { key: "sign_want",   label: "WANT",   mediaType: "video", mediaSrc: "/asl_videos/verbs/want.mp4",        description: "Both bent 5-hands (claw-shape) pull toward your body as if grabbing something you desire." },
     ],
     sentences: [
       {

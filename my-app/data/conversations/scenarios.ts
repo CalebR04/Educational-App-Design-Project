@@ -1,3 +1,5 @@
+import { lessonConfigs } from "../lessons/lessonConfigs";
+
 export type ConvSign = {
   src: string;
   mediaType: "image" | "video";
@@ -6,9 +8,11 @@ export type ConvSign = {
 
 export type ResponseOption = {
   id: string;
-  text: string;       // English label shown to player
-  signs: ConvSign[];  // The ASL signs this response uses
+  text: string;         // English label shown to player
+  signs: ConvSign[];    // The ASL signs this response uses
   correct: boolean;
+  /** Optional reaction video played when this wrong answer is chosen (e.g. confused partner) */
+  reactionVideoUrl?: string;
 };
 
 export type ConversationTurn = {
@@ -23,6 +27,12 @@ export type ConversationTurn = {
   options: ResponseOption[];
   // ASL grammar / cultural fact shown after answering correctly
   aslNote?: { title: string; body: string };
+  /**
+   * When true, the partner's question requires furrowed brows (WH-question).
+   * If the player misses a wrong-answer on a quiz tied to this turn,
+   * the grammar hint about eyebrows-down is surfaced.
+   */
+  requiresEyebrowsDown?: boolean;
 };
 
 export type ConversationScenario = {
@@ -39,55 +49,74 @@ export type ConversationScenario = {
   turns: ConversationTurn[];
 };
 
-// ── Reusable sign shorthands ──────────────────────────────────────────────
+// ── Single Source of Truth ────────────────────────────────────────────────────
+// All sign data (video URLs, labels, mediaType) is sourced from lessonConfigs.
+// Never hardcode video paths here — add new signs to lessonConfigs first.
 
-const S: Record<string, ConvSign> = {
-  ME:          { src: "/asl_videos/daily_life/me.mp4",          mediaType: "video", label: "ME" },
-  YOU:         { src: "/asl_videos/pronouns/you.mp4",           mediaType: "video", label: "YOU" },
-  HELLO:       { src: "/asl_videos/greetings/hello.mp4",        mediaType: "video", label: "HELLO" },
-  GOOD_MORNING:{ src: "/asl_videos/greetings/morning.mp4",      mediaType: "video", label: "GOOD MORNING" },
-  HOW:         { src: "/asl_videos/questions/how.mp4",          mediaType: "video", label: "HOW" },
-  GOOD:        { src: "/asl_videos/adjectives/good.mp4",        mediaType: "video", label: "GOOD" },
-  THANK_YOU:   { src: "/asl_videos/greetings/thank_you.mp4",    mediaType: "video", label: "THANK YOU" },
-  PLEASE:      { src: "/asl_videos/greetings/please.mp4",       mediaType: "video", label: "PLEASE" },
-  SORRY:       { src: "/asl_videos/greetings/sorry.mp4",        mediaType: "video", label: "SORRY" },
-  FINE:        { src: "/asl_videos/adjectives/fine.mp4",        mediaType: "video", label: "FINE" },
-  NICE:        { src: "/asl_videos/adjectives/nice.mp4",        mediaType: "video", label: "NICE" },
-  MEET:        { src: "/asl_videos/verbs/meet.mp4",             mediaType: "video", label: "MEET" },
-  NAME:        { src: "/asl_videos/daily_life/name.mp4",        mediaType: "video", label: "NAME" },
-  HELP:        { src: "/asl_videos/daily_life/help.mp4",        mediaType: "video", label: "HELP" },
-  AGAIN:       { src: "/asl_videos/adjectives/again.mp4",       mediaType: "video", label: "AGAIN" },
-  SLOW:        { src: "/asl_videos/adjectives/slow.mp4",        mediaType: "video", label: "SLOW" },
-  UNDERSTAND:  { src: "/asl_videos/verbs/understand.mp4",       mediaType: "video", label: "UNDERSTAND" },
-  KNOW:        { src: "/asl_videos/verbs/know.mp4",             mediaType: "video", label: "KNOW" },
-  FORGET:      { src: "/asl_videos/verbs/forget.mp4",           mediaType: "video", label: "FORGET" },
-  WELCOME:     { src: "/asl_videos/greetings/welcome.mp4",      mediaType: "video", label: "YOU'RE WELCOME" },
-  HOME:        { src: "/asl_videos/daily_life/home.mp4",        mediaType: "video", label: "HOME" },
-  WORK:        { src: "/asl_videos/daily_life/work.mp4",        mediaType: "video", label: "WORK" },
-  SCHOOL:      { src: "/asl_videos/daily_life/school.mp4",      mediaType: "video", label: "SCHOOL" },
-  GO:          { src: "/asl_videos/verbs/go.mp4",               mediaType: "video", label: "GO" },
-  COME:        { src: "/asl_videos/verbs/come.mp4",             mediaType: "video", label: "COME" },
-  MOTHER:      { src: "/asl_videos/relationships/mother.mp4",   mediaType: "video", label: "MOTHER" },
-  FATHER:      { src: "/asl_videos/relationships/father.mp4",   mediaType: "video", label: "FATHER" },
-  BROTHER:     { src: "/asl_videos/relationships/brother.mp4",  mediaType: "video", label: "BROTHER" },
-  SISTER:      { src: "/asl_videos/relationships/sister.mp4",   mediaType: "video", label: "SISTER" },
-  NOW:         { src: "/asl_videos/time/now.mp4",               mediaType: "video", label: "NOW" },
-  LATER:       { src: "/asl_videos/time/later.mp4",             mediaType: "video", label: "LATER" },
-  TODAY:       { src: "/asl_videos/time/today.mp4",             mediaType: "video", label: "TODAY" },
-  TOMORROW:    { src: "/asl_videos/time/tomorrow.mp4",          mediaType: "video", label: "TOMORROW" },
-  YESTERDAY:   { src: "/asl_videos/time/yesterday.mp4",         mediaType: "video", label: "YESTERDAY" },
-  WHERE:       { src: "/asl_videos/questions/where.mp4",        mediaType: "video", label: "WHERE" },
-  WHAT:        { src: "/asl_videos/questions/what.mp4",         mediaType: "video", label: "WHAT" },
-  WHEN:        { src: "/asl_videos/questions/when.mp4",         mediaType: "video", label: "WHEN" },
-  WHO:         { src: "/asl_videos/questions/who.mp4",          mediaType: "video", label: "WHO" },
-  WHY:         { src: "/asl_videos/questions/why.mp4",          mediaType: "video", label: "WHY" },
-  WANT:        { src: "/asl_videos/verbs/want.mp4",             mediaType: "video", label: "WANT" },
+function buildVocabLookup() {
+  const map: Record<string, { src: string; mediaType: "image" | "video"; label: string }> = {};
+  for (const config of Object.values(lessonConfigs)) {
+    for (const item of config.vocab) {
+      map[item.key] = { src: item.mediaSrc, mediaType: item.mediaType, label: item.label };
+    }
+  }
+  return function sign(key: string): ConvSign {
+    const v = map[key];
+    if (!v) throw new Error(`[scenarios] Sign key "${key}" not found in lessonConfigs. Add it there first.`);
+    return v;
+  };
+}
+
+const sign = buildVocabLookup();
+
+// Shorthand aliases — add new entries by adding the VocabItem to lessonConfigs, then alias here
+const S = {
+  ME:           sign("sign_me"),
+  YOU:          sign("sign_you"),
+  HELLO:        sign("sign_hello"),
+  GOOD_MORNING: sign("sign_morning"),
+  HOW:          sign("sign_how"),
+  GOOD:         sign("sign_good"),
+  THANK_YOU:    sign("sign_thankyou"),
+  PLEASE:       sign("sign_please"),
+  SORRY:        sign("sign_sorry"),
+  FINE:         sign("sign_fine"),
+  NICE:         sign("sign_nice"),
+  MEET:         sign("sign_meet"),
+  NAME:         sign("sign_name"),
+  HELP:         sign("sign_help"),
+  AGAIN:        sign("sign_again"),
+  SLOW:         sign("sign_slow"),
+  UNDERSTAND:   sign("sign_understand"),
+  KNOW:         sign("sign_know"),
+  FORGET:       sign("sign_forget"),
+  WELCOME:      sign("sign_welcome"),
+  HOME:         sign("sign_home"),
+  WORK:         sign("sign_work"),
+  SCHOOL:       sign("sign_school"),
+  GO:           sign("sign_go"),
+  COME:         sign("sign_come"),
+  WANT:         sign("sign_want"),
+  MOTHER:       sign("sign_mother"),
+  FATHER:       sign("sign_father"),
+  BROTHER:      sign("sign_brother"),
+  SISTER:       sign("sign_sister"),
+  NOW:          sign("sign_now"),
+  LATER:        sign("sign_later"),
+  TODAY:        sign("sign_today"),
+  TOMORROW:     sign("sign_tomorrow"),
+  YESTERDAY:    sign("sign_yesterday"),
+  WHERE:        sign("sign_where"),
+  WHAT:         sign("sign_what"),
+  WHEN:         sign("sign_when"),
+  WHO:          sign("sign_who"),
+  WHY:          sign("sign_why"),
 };
 
-// ── Scenarios ─────────────────────────────────────────────────────────────
+// ── Scenarios ─────────────────────────────────────────────────────────────────
 
 export const conversationScenarios: ConversationScenario[] = [
-  // ── Scenario 1: Morning Greetings ─────────────────────────────────────
+  // ── Scenario 1: Morning Greetings ─────────────────────────────────────────
   {
     id: "morning-greetings",
     title: "Morning Greetings",
@@ -108,8 +137,10 @@ export const conversationScenarios: ConversationScenario[] = [
         yourSigns: [S.GOOD, S.THANK_YOU],
         options: [
           { id: "a", text: "Good, thank you!", signs: [S.GOOD, S.THANK_YOU], correct: true },
-          { id: "b", text: "Help me please!", signs: [S.HELP, S.ME, S.PLEASE], correct: false },
-          { id: "c", text: "Sorry, I forgot.", signs: [S.SORRY, S.ME, S.FORGET], correct: false },
+          { id: "b", text: "Help me please!", signs: [S.HELP, S.ME, S.PLEASE], correct: false,
+            reactionVideoUrl: "/asl_videos/reactions/confused.mp4" },
+          { id: "c", text: "Sorry, I forgot.", signs: [S.SORRY, S.ME, S.FORGET], correct: false,
+            reactionVideoUrl: "/asl_videos/reactions/confused.mp4" },
           { id: "d", text: "I'm going home.", signs: [S.ME, S.GO, S.HOME], correct: false },
         ],
         aslNote: {
@@ -123,8 +154,10 @@ export const conversationScenarios: ConversationScenario[] = [
         partnerEnglish: "What is your name?",
         yourEnglish: "My name! (Introduce yourself)",
         yourSigns: [S.ME, S.NAME],
+        requiresEyebrowsDown: true,
         options: [
-          { id: "a", text: "Nice to meet you!", signs: [S.NICE, S.MEET, S.YOU], correct: false },
+          { id: "a", text: "Nice to meet you!", signs: [S.NICE, S.MEET, S.YOU], correct: false,
+            reactionVideoUrl: "/asl_videos/reactions/confused.mp4" },
           { id: "b", text: "My name!", signs: [S.ME, S.NAME], correct: true },
           { id: "c", text: "I go to school.", signs: [S.ME, S.GO, S.SCHOOL], correct: false },
           { id: "d", text: "I don't know.", signs: [S.ME, S.FORGET], correct: false },
@@ -154,7 +187,7 @@ export const conversationScenarios: ConversationScenario[] = [
     ],
   },
 
-  // ── Scenario 2: Asking for Help ────────────────────────────────────────
+  // ── Scenario 2: Asking for Help ───────────────────────────────────────────
   {
     id: "asking-for-help",
     title: "Asking for Help",
@@ -174,10 +207,13 @@ export const conversationScenarios: ConversationScenario[] = [
         yourEnglish: "Sorry, I forgot / I don't understand.",
         yourSigns: [S.SORRY, S.ME, S.FORGET],
         options: [
-          { id: "a", text: "Yes, I understand!", signs: [S.ME, S.UNDERSTAND], correct: false },
-          { id: "b", text: "Good morning!", signs: [S.GOOD_MORNING], correct: false },
+          { id: "a", text: "Yes, I understand!", signs: [S.ME, S.UNDERSTAND], correct: false,
+            reactionVideoUrl: "/asl_videos/reactions/surprised.mp4" },
+          { id: "b", text: "Good morning!", signs: [S.GOOD_MORNING], correct: false,
+            reactionVideoUrl: "/asl_videos/reactions/confused.mp4" },
           { id: "c", text: "Sorry, I forgot.", signs: [S.SORRY, S.ME, S.FORGET], correct: true },
-          { id: "d", text: "Nice to meet you.", signs: [S.NICE, S.MEET, S.YOU], correct: false },
+          { id: "d", text: "Nice to meet you.", signs: [S.NICE, S.MEET, S.YOU], correct: false,
+            reactionVideoUrl: "/asl_videos/reactions/confused.mp4" },
         ],
         aslNote: {
           title: "Yes/No Questions: Raise Your Eyebrows",
@@ -221,7 +257,7 @@ export const conversationScenarios: ConversationScenario[] = [
     ],
   },
 
-  // ── Scenario 3: Family Weekend ─────────────────────────────────────────
+  // ── Scenario 3: Family Weekend ────────────────────────────────────────────
   {
     id: "family-weekend",
     title: "Family Weekend",
@@ -240,11 +276,14 @@ export const conversationScenarios: ConversationScenario[] = [
         partnerEnglish: "Where are you going tomorrow?",
         yourEnglish: "Tomorrow I go home!",
         yourSigns: [S.TOMORROW, S.ME, S.GO, S.HOME],
+        requiresEyebrowsDown: true,
         options: [
-          { id: "a", text: "Yesterday I was at school.", signs: [S.YESTERDAY, S.ME, S.SCHOOL], correct: false },
+          { id: "a", text: "Yesterday I was at school.", signs: [S.YESTERDAY, S.ME, S.SCHOOL], correct: false,
+            reactionVideoUrl: "/asl_videos/reactions/confused.mp4" },
           { id: "b", text: "Tomorrow I go home!", signs: [S.TOMORROW, S.ME, S.GO, S.HOME], correct: true },
           { id: "c", text: "I understand now.", signs: [S.ME, S.UNDERSTAND, S.NOW], correct: false },
-          { id: "d", text: "Thank you, nice!", signs: [S.THANK_YOU, S.NICE], correct: false },
+          { id: "d", text: "Thank you, nice!", signs: [S.THANK_YOU, S.NICE], correct: false,
+            reactionVideoUrl: "/asl_videos/reactions/confused.mp4" },
         ],
         aslNote: {
           title: "Time Signs Set the Stage",
@@ -257,10 +296,12 @@ export const conversationScenarios: ConversationScenario[] = [
         partnerEnglish: "Where are your mother and father?",
         yourEnglish: "My mother and father are home.",
         yourSigns: [S.MOTHER, S.FATHER, S.HOME],
+        requiresEyebrowsDown: true,
         options: [
           { id: "a", text: "My mother and father are home.", signs: [S.MOTHER, S.FATHER, S.HOME], correct: true },
           { id: "b", text: "My brother and sister go to school.", signs: [S.BROTHER, S.SISTER, S.SCHOOL], correct: false },
-          { id: "c", text: "Yesterday, work.", signs: [S.YESTERDAY, S.WORK], correct: false },
+          { id: "c", text: "Yesterday, work.", signs: [S.YESTERDAY, S.WORK], correct: false,
+            reactionVideoUrl: "/asl_videos/reactions/confused.mp4" },
           { id: "d", text: "I meet them tomorrow.", signs: [S.MEET, S.TOMORROW], correct: false },
         ],
         aslNote: {
@@ -288,7 +329,7 @@ export const conversationScenarios: ConversationScenario[] = [
     ],
   },
 
-  // ── Scenario 4: Daily Routine ──────────────────────────────────────────
+  // ── Scenario 4: Daily Routine ─────────────────────────────────────────────
   {
     id: "daily-routine",
     title: "Daily Routine",
@@ -309,9 +350,11 @@ export const conversationScenarios: ConversationScenario[] = [
         yourSigns: [S.TODAY, S.ME, S.GO, S.SCHOOL],
         options: [
           { id: "a", text: "Yes, I go to work!", signs: [S.ME, S.GO, S.WORK], correct: false },
-          { id: "b", text: "I understand.", signs: [S.ME, S.UNDERSTAND], correct: false },
+          { id: "b", text: "I understand.", signs: [S.ME, S.UNDERSTAND], correct: false,
+            reactionVideoUrl: "/asl_videos/reactions/confused.mp4" },
           { id: "c", text: "No, today I go to school.", signs: [S.TODAY, S.ME, S.GO, S.SCHOOL], correct: true },
-          { id: "d", text: "Thank you, good!", signs: [S.THANK_YOU, S.GOOD], correct: false },
+          { id: "d", text: "Thank you, good!", signs: [S.THANK_YOU, S.GOOD], correct: false,
+            reactionVideoUrl: "/asl_videos/reactions/confused.mp4" },
         ],
         aslNote: {
           title: "ASL Has No 'No' Word Like English",
@@ -324,9 +367,11 @@ export const conversationScenarios: ConversationScenario[] = [
         partnerEnglish: "What are you doing right now?",
         yourEnglish: "I'm going home now.",
         yourSigns: [S.ME, S.GO, S.HOME, S.NOW],
+        requiresEyebrowsDown: true,
         options: [
           { id: "a", text: "I'm going home now!", signs: [S.ME, S.GO, S.HOME, S.NOW], correct: true },
-          { id: "b", text: "Yesterday, work.", signs: [S.YESTERDAY, S.WORK], correct: false },
+          { id: "b", text: "Yesterday, work.", signs: [S.YESTERDAY, S.WORK], correct: false,
+            reactionVideoUrl: "/asl_videos/reactions/confused.mp4" },
           { id: "c", text: "I understand.", signs: [S.ME, S.UNDERSTAND], correct: false },
           { id: "d", text: "Thank you, good.", signs: [S.THANK_YOU, S.GOOD], correct: false },
         ],
@@ -341,10 +386,12 @@ export const conversationScenarios: ConversationScenario[] = [
         partnerEnglish: "When are you coming home?",
         yourEnglish: "I'm coming home later.",
         yourSigns: [S.ME, S.COME, S.HOME, S.LATER],
+        requiresEyebrowsDown: true,
         options: [
           { id: "a", text: "I was home yesterday.", signs: [S.YESTERDAY, S.ME, S.HOME], correct: false },
           { id: "b", text: "Tomorrow I go to school.", signs: [S.TOMORROW, S.SCHOOL], correct: false },
-          { id: "c", text: "I forgot when.", signs: [S.ME, S.FORGET], correct: false },
+          { id: "c", text: "I forgot when.", signs: [S.ME, S.FORGET], correct: false,
+            reactionVideoUrl: "/asl_videos/reactions/confused.mp4" },
           { id: "d", text: "I'm coming home later.", signs: [S.ME, S.COME, S.HOME, S.LATER], correct: true },
         ],
         aslNote: {

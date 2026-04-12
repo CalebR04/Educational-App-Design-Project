@@ -34,23 +34,16 @@ function applyLocks(raw: LessonWithStatus[]): LessonWithStatus[] {
   });
 }
 
-function buildFromLocal(dbOverrides: Record<string, LessonProgressRow> = {}): LessonWithStatus[] {
+function buildFromDb(dbData: Record<string, LessonProgressRow>): LessonWithStatus[] {
   const raw: LessonWithStatus[] = allLessonMeta.map(meta => {
-    const db = dbOverrides[meta.id];
-    const saved = localStorage.getItem(`sign_quest_progress_${meta.id}`);
-    const local = saved ? JSON.parse(saved) : null;
-
-    // ever_completed: Supabase is authoritative; fall back to localStorage
-    const everCompleted = db?.ever_completed === true || local?.everCompleted === true;
-    const status: LessonStatus = db?.status ?? local?.status ?? "Not Started";
-    const progress: number = db?.progress ?? local?.progress ?? 0;
-
-    // Keep localStorage in sync if Supabase has newer data
-    if (db && local && db.ever_completed && !local.everCompleted) {
-      localStorage.setItem(`sign_quest_progress_${meta.id}`, JSON.stringify({ ...local, everCompleted: true }));
-    }
-
-    return { ...meta, status, progress, everCompleted, locked: false };
+    const db = dbData[meta.id];
+    return {
+      ...meta,
+      status: db?.status ?? "Not Started",
+      progress: db?.progress ?? 0,
+      everCompleted: db?.ever_completed === true,
+      locked: false,
+    };
   });
   return applyLocks(raw);
 }
@@ -61,17 +54,15 @@ export default function LessonsPage() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    // Render immediately from localStorage, then merge Supabase data
-    const initial = buildFromLocal();
-    setLessons(initial);
+    // Show skeleton immediately, then populate from Supabase
+    const empty = buildFromDb({});
+    setLessons(empty);
     setMounted(true);
-    computeStats(initial);
 
     fetchAllLessonProgress().then(dbData => {
-      if (Object.keys(dbData).length === 0) return;
-      const merged = buildFromLocal(dbData);
-      setLessons(merged);
-      computeStats(merged);
+      const built = buildFromDb(dbData);
+      setLessons(built);
+      computeStats(built);
     });
   }, []);
 
@@ -85,12 +76,8 @@ export default function LessonsPage() {
   }
 
   const handleReset = (id: string) => {
-    const saved = localStorage.getItem(`sign_quest_progress_${id}`);
-    const wasCompleted = saved ? JSON.parse(saved).everCompleted === true : false;
-    const resetData = { status: "Not Started", progress: 0, correctCount: 0, currentIndex: 0, queue: [], everCompleted: wasCompleted };
-    localStorage.setItem(`sign_quest_progress_${id}`, JSON.stringify(resetData));
-    // Sync reset to Supabase (keeps ever_completed, clears active progress)
-    upsertLessonProgress(id, { status: "Not Started", progress: 0, ever_completed: wasCompleted, correct_count: 0 });
+    const lesson = lessons.find(l => l.id === id);
+    upsertLessonProgress(id, { status: "Not Started", progress: 0, ever_completed: lesson?.everCompleted ?? false, correct_count: 0 });
     setLessons(prev => applyLocks(prev.map(l => l.id === id ? { ...l, status: "Not Started", progress: 0 } : l)));
   };
 
@@ -111,18 +98,19 @@ export default function LessonsPage() {
           <h2 className="text-2xl font-bold mb-1">Your Learning Journey</h2>
           <p className="text-white/80 mb-6">Keep up the great work!</p>
           <div className="grid grid-cols-3 gap-4 mb-4">
-            <div className="bg-white/20 backdrop-blur rounded-xl p-4">
-              <div className="text-3xl font-bold">{stats.completed}</div>
-              <div className="text-sm text-white/90">Completed</div>
-            </div>
-            <div className="bg-white/20 backdrop-blur rounded-xl p-4">
-              <div className="text-3xl font-bold">{stats.inProgress}</div>
-              <div className="text-sm text-white/90">In Progress</div>
-            </div>
-            <div className="bg-white/20 backdrop-blur rounded-xl p-4">
-              <div className="text-3xl font-bold">{stats.overall}%</div>
-              <div className="text-sm text-white/90">Overall</div>
-            </div>
+            {[
+              { label: "Completed",   value: `${stats.completed}` },
+              { label: "In Progress", value: `${stats.inProgress}` },
+              { label: "Overall",     value: `${stats.overall}%` },
+            ].map(({ label, value }) => (
+              <div key={label} className="bg-white/20 backdrop-blur rounded-xl p-4">
+                {!mounted
+                  ? <div className="h-9 w-12 bg-white/30 animate-pulse rounded mb-1" />
+                  : <div className="text-3xl font-bold">{value}</div>
+                }
+                <div className="text-sm text-white/90">{label}</div>
+              </div>
+            ))}
           </div>
           <div className="bg-white/20 backdrop-blur rounded-full h-3 overflow-hidden">
             <div className="bg-white h-3 transition-all duration-500" style={{ width: `${stats.overall}%` }} />
@@ -133,19 +121,37 @@ export default function LessonsPage() {
         <div className="mb-8">
           <h2 className="text-xl font-bold text-gray-900 mb-4">Practice Modes</h2>
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <Link href="/lessons/sign-practice" className="block">
-              <div className="bg-white border-2 border-gray-200 rounded-2xl p-6 hover:border-blue-500 hover:shadow-xl transition-all cursor-pointer">
-                <div className="flex items-start gap-4">
-                  <div className="w-16 h-16 bg-linear-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shrink-0">
-                    <Target className="h-8 w-8 text-white" />
+            {(() => {
+              const LEVEL_1_IDS = ["alphabet-1", "alphabet-2", "numbers-1", "deixis-1"];
+              const practiceUnlocked = mounted && LEVEL_1_IDS.every(id => lessons.find(l => l.id === id)?.everCompleted);
+              return practiceUnlocked ? (
+                <Link href="/lessons/sign-practice" className="block">
+                  <div className="bg-white border-2 border-gray-200 rounded-2xl p-6 hover:border-blue-500 hover:shadow-xl transition-all cursor-pointer">
+                    <div className="flex items-start gap-4">
+                      <div className="w-16 h-16 bg-linear-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shrink-0">
+                        <Target className="h-8 w-8 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold text-gray-900 mb-1">Sign Practice</h3>
+                        <p className="text-gray-600 text-sm">12 questions focused on your weakest signs. Gets smarter as you learn.</p>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-1">Sign Practice</h3>
-                    <p className="text-gray-600 text-sm">12 questions focused on your weakest signs. Gets smarter as you learn.</p>
+                </Link>
+              ) : (
+                <div className="bg-white border-2 border-gray-200 rounded-2xl p-6 opacity-50 cursor-not-allowed select-none">
+                  <div className="flex items-start gap-4">
+                    <div className="w-16 h-16 bg-linear-to-br from-gray-300 to-gray-400 rounded-xl flex items-center justify-center shrink-0">
+                      <Lock className="h-8 w-8 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-gray-900 mb-1">Sign Practice</h3>
+                      <p className="text-gray-500 text-sm">Complete all Level 1 lessons to unlock.</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </Link>
+              );
+            })()}
             <ComingSoonCard icon={<MessageSquare className="h-8 w-8 text-white" />} color="from-purple-500 to-purple-600" title="Conversation Practice" desc="Build fluency through interactive scenarios." />
           </div>
         </div>

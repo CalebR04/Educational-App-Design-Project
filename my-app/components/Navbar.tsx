@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Settings, LogOut, UserPlus, User, SlidersHorizontal } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { updateLoginStreak } from "@/lib/supabase/userStats";
 
 type NavbarProps = {
   active: string;
@@ -14,6 +15,7 @@ export default function Navbar({ active }: NavbarProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [displayName, setDisplayName] = useState<string | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [isGuest, setIsGuest] = useState(false);
   const [showGuestLogoutModal, setShowGuestLogoutModal] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -39,11 +41,13 @@ export default function Navbar({ active }: NavbarProps) {
     }
     const { data: profile } = await supabase
       .from("profiles")
-      .select("full_name")
+      .select("full_name, avatar_url")
       .eq("id", user.id)
       .single();
     setDisplayName(profile?.full_name || "Account");
+    setAvatarUrl(profile?.avatar_url ?? null);
     setIsGuest(false);
+    updateLoginStreak();
   }
 
   useEffect(() => {
@@ -142,8 +146,11 @@ export default function Navbar({ active }: NavbarProps) {
                 {/* Account info */}
                 <div className="px-4 py-3 border-b border-gray-100">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 text-blue-600 shrink-0">
-                      <User className="h-4 w-4" />
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 text-blue-600 shrink-0 overflow-hidden">
+                      {avatarUrl
+                        ? <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                        : <User className="h-4 w-4" />
+                      }
                     </div>
                     <div className="min-w-0">
                       {displayName ? (

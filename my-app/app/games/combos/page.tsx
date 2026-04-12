@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { addGameScore, fetchGameHighScores, updateGameHighScore } from "@/lib/supabase/userStats";
 import { Play, CheckCircle2, RefreshCcw, BookOpen, MoveHorizontal, Lightbulb, Trophy, ArrowRight, Info, X, LogOut } from 'lucide-react';
 
 interface Sign {
@@ -75,11 +76,10 @@ export default function SignComboPage() {
   // Initialize game
   useEffect(() => {
     setMounted(true);
-    const storedHighScore = localStorage.getItem('sign_combo_highscore');
-    const storedGames = localStorage.getItem('sign_combo_gamesplayed');
-    if (storedHighScore) setHighScore(parseInt(storedHighScore));
-    if (storedGames) setGamesPlayed(parseInt(storedGames));
-    
+    fetchGameHighScores().then(s => {
+      setHighScore(s.comboHigh);
+      setGamesPlayed(s.comboPlayed);
+    });
     startNewGame();
   }, []);
 
@@ -145,13 +145,11 @@ export default function SignComboPage() {
   const handleNextPhrase = () => {
     if (currentIdx === 4) {
       setGameOver(true);
-      const newGamesPlayed = gamesPlayed + 1;
-      setGamesPlayed(newGamesPlayed);
-      localStorage.setItem('sign_combo_gamesplayed', newGamesPlayed.toString());
-      
+      setGamesPlayed(prev => prev + 1);
+      if (score > 0) addGameScore(score, "combo");
       if (score > highScore) {
         setHighScore(score);
-        localStorage.setItem('sign_combo_highscore', score.toString());
+        updateGameHighScore("combo", score);
       }
     } else {
       const next = currentIdx + 1;

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Navbar from "../../components/Navbar";
 import { useEffect, useState } from "react";
+import { fetchGameHighScores } from "@/lib/supabase/userStats";
 
 export default function GamesPage() {
   const activeTab = "Games";
@@ -11,17 +12,20 @@ export default function GamesPage() {
   const [memoryPlayed, setMemoryPlayed] = useState(0);
   const [combosScore, setCombosScore] = useState(0);
   const [combosPlayed, setCombosPlayed] = useState(0);
+  const [battleScore, setBattleScore] = useState(0);
+  const [battlePlayed, setBattlePlayed] = useState(0);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const savedMemoryScore = localStorage.getItem("memoryHighScore");
-    const savedMemoryPlayed = localStorage.getItem("memoryWins");
-    const savedCombosScore = localStorage.getItem("sign_combo_highscore");
-    const savedCombosPlayed = localStorage.getItem("sign_combo_gamesplayed");
-
-    if (savedMemoryScore) setMemoryScore(Number(savedMemoryScore));
-    if (savedMemoryPlayed) setMemoryPlayed(Number(savedMemoryPlayed));
-    if (savedCombosScore) setCombosScore(Number(savedCombosScore));
-    if (savedCombosPlayed) setCombosPlayed(Number(savedCombosPlayed));
+    fetchGameHighScores().then(s => {
+      setMemoryScore(s.memoryHigh);
+      setMemoryPlayed(s.memoryPlayed);
+      setCombosScore(s.comboHigh);
+      setCombosPlayed(s.comboPlayed);
+      setBattleScore(s.battleHigh);
+      setBattlePlayed(s.battlePlayed);
+      setLoading(false);
+    });
   }, []);
 
   const games = [
@@ -49,8 +53,8 @@ export default function GamesPage() {
       title: "Sign Battle",
       description: "Face AI opponents in fast-paced sign challenges",
       difficulty: "Hard",
-      plays: 0,
-      score: 0,
+      plays: battlePlayed,
+      score: battleScore,
       gradient: "from-orange-400 to-red-600",
       icon: "🏆",
       link: "/games/battle",
@@ -102,11 +106,17 @@ export default function GamesPage() {
 
                 <div className="p-4 grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-2xl font-bold text-gray-900">{game.plays}</p>
+                    {loading
+                      ? <div className="h-7 w-12 bg-gray-200 animate-pulse rounded mb-1" />
+                      : <p className="text-2xl font-bold text-gray-900">{game.plays}</p>
+                    }
                     <p className="text-xs text-gray-600">Games Played</p>
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-gray-900">{game.score}</p>
+                    {loading
+                      ? <div className="h-7 w-12 bg-gray-200 animate-pulse rounded mb-1" />
+                      : <p className="text-2xl font-bold text-gray-900">{game.score}</p>
+                    }
                     <p className="text-xs text-gray-600">High Score</p>
                   </div>
                 </div>

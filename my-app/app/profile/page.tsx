@@ -1,24 +1,54 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Navbar from "../../components/Navbar";
-import { User, Award, Target, Flame, Calendar, Trophy, Star, Lock } from "lucide-react";
-
-const badges = [
-  { id: "first-sign", name: "First Steps", description: "Learn your first ASL sign", icon: Star, color: "from-blue-400 to-blue-600", unlocked: true, unlockedDate: "Jan 15, 2026" },
-  { id: "50-signs", name: "Half Century", description: "Learn 50 ASL signs", icon: Target, color: "from-yellow-400 to-orange-500", unlocked: true, unlockedDate: "Jan 28, 2026" },
-  { id: "week-streak", name: "Week Warrior", description: "Maintain a 7-day streak", icon: Flame, color: "from-green-400 to-emerald-500", unlocked: true, unlockedDate: "Feb 3, 2026" },
-  { id: "75-accuracy", name: "Sharp Shooter", description: "Reach 75% accuracy", icon: Target, color: "from-blue-400 to-indigo-500", unlocked: true, unlockedDate: "Feb 1, 2026" },
-  { id: "100-signs", name: "Century Club", description: "Master 100 ASL signs", icon: Trophy, color: "from-purple-400 to-purple-600", unlocked: false },
-  { id: "month-streak", name: "Monthly Master", description: "Maintain a 30-day streak", icon: Flame, color: "from-orange-400 to-red-600", unlocked: false },
-  { id: "90-accuracy", name: "Precision Pro", description: "Reach 90% accuracy", icon: Target, color: "from-pink-400 to-pink-600", unlocked: false },
-  { id: "game-master", name: "Game Master", description: "Win 100 mini-games", icon: Trophy, color: "from-indigo-400 to-purple-600", unlocked: false },
-];
-
-const milestones = [
-  { value: 67, max: 100, label: "Signs Learned", color: "bg-blue-500" },
-  { value: 78, max: 85, label: "Target Accuracy", color: "bg-green-500" },
-  { value: 2340, max: 5000, label: "Score Goal", color: "bg-purple-500" },
-];
+import { User, Award, Flame, Trophy, Lock, Target } from "lucide-react";
+import { fetchUserStats, type UserStats } from "@/lib/supabase/userStats";
+import { createClient } from "@/lib/supabase/client";
+import { ALL_ACHIEVEMENTS, CATEGORY_META } from "@/data/achievements";
 
 export default function ProfilePage() {
+  const [stats, setStats] = useState<UserStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [joinedDate, setJoinedDate] = useState<string>("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchUserStats().then(s => { setStats(s); setLoading(false); });
+    const supabase = createClient();
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) return;
+      if (user.created_at) {
+        const d = new Date(user.created_at);
+        setJoinedDate(d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }));
+      }
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("avatar_url")
+        .eq("id", user.id)
+        .single();
+      setAvatarUrl(profile?.avatar_url ?? null);
+    });
+  }, []);
+
+  const signsLearned = stats?.signsLearned ?? 0;
+  const totalScore   = stats?.totalScore   ?? 0;
+  const accuracy     = stats?.accuracy     ?? 100;
+  const streak       = stats?.streak       ?? 0;
+  const displayName  = stats?.displayName  ?? "";
+
+  const badges = stats
+    ? ALL_ACHIEVEMENTS.map(a => ({ ...a, isUnlocked: a.unlocked(stats) }))
+    : ALL_ACHIEVEMENTS.map(a => ({ ...a, isUnlocked: false }));
+
+  const unlockedCount = badges.filter(b => b.isUnlocked).length;
+
+  const nextMilestone = signsLearned < 50
+    ? { goal: 50,  label: "signs to reach 50 and unlock Half Century!" }
+    : signsLearned < 105
+    ? { goal: 105, label: "signs to reach 105 and unlock Sign Master!" }
+    : null;
+
   return (
     <div className="min-h-screen bg-white">
       <Navbar active="Profile" />
@@ -27,156 +57,133 @@ export default function ProfilePage() {
         {/* Profile Header */}
         <div className="bg-linear-to-br from-blue-500 to-purple-600 rounded-2xl p-8 text-white mb-8">
           <div className="flex items-start gap-6">
-            <div className="w-24 h-24 bg-white/20 backdrop-blur rounded-full flex items-center justify-center">
-              <User className="w-12 h-12" />
+            <div className="w-24 h-24 bg-white/20 backdrop-blur rounded-full overflow-hidden flex items-center justify-center shrink-0">
+              {avatarUrl
+                ? <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                : <User className="w-12 h-12" />
+              }
             </div>
             <div className="flex-1">
-              <h2 className="text-3xl font-bold mb-2">Timothy</h2>
-              <p className="text-blue-100 mb-4">ASL Learner since January 2024</p>
-
+              {loading
+                ? <div className="h-9 w-40 bg-white/30 animate-pulse rounded mb-2" />
+                : <h2 className="text-3xl font-bold mb-2">{displayName || "Learner"}</h2>
+              }
+              {loading
+                ? <div className="h-4 w-52 bg-white/20 animate-pulse rounded mb-4" />
+                : <p className="text-blue-100 mb-4">ASL Learner since {joinedDate || "..."}</p>
+              }
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-white/20 backdrop-blur rounded-lg p-3">
-                  <div className="text-2xl font-bold">67</div>
-                  <div className="text-xs opacity-90">Signs Learned</div>
-                </div>
-                <div className="bg-white/20 backdrop-blur rounded-lg p-3">
-                  <div className="text-2xl font-bold">2,340</div>
-                  <div className="text-xs opacity-90">Total Score</div>
-                </div>
-                <div className="bg-white/20 backdrop-blur rounded-lg p-3">
-                  <div className="text-2xl font-bold">78%</div>
-                  <div className="text-xs opacity-90">Accuracy</div>
-                </div>
-                <div className="bg-white/20 backdrop-blur rounded-lg p-3">
-                  <div className="text-2xl font-bold">7</div>
-                  <div className="text-xs opacity-90">Day Streak</div>
-                </div>
+                {[
+                  { label: "Signs Learned", value: `${signsLearned}` },
+                  { label: "Total Score",   value: totalScore.toLocaleString() },
+                  { label: "Accuracy",      value: `${accuracy}%` },
+                  { label: "Day Streak",    value: `${streak}` },
+                ].map(({ label, value }) => (
+                  <div key={label} className="bg-white/20 backdrop-blur rounded-lg p-3">
+                    <div className="text-xs opacity-90 mb-1">{label}</div>
+                    {loading
+                      ? <div className="h-7 w-16 bg-white/30 animate-pulse rounded" />
+                      : <div className="text-2xl font-bold">{value}</div>
+                    }
+                  </div>
+                ))}
               </div>
             </div>
           </div>
         </div>
 
         <div className="grid md:grid-cols-3 gap-8">
-          {/* Left Column */}
-          <div className="md:col-span-2 space-y-8">
-            {/* Progress Milestones */}
-            <div className="bg-white rounded-2xl border-2 border-gray-200 p-6">
-              <h3 className="font-bold text-gray-900 mb-6 flex items-center gap-2">
-                <Target className="w-5 h-5 text-blue-500" />
-                Progress Milestones
-              </h3>
-              <div className="space-y-6">
-                {milestones.map((milestone) => (
-                  <div key={milestone.label}>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-semibold text-gray-900">{milestone.label}</span>
-                      <span className="text-sm text-gray-600">{milestone.value} / {milestone.max}</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-3">
-                      <div
-                        className={`${milestone.color} rounded-full h-3 transition-all`}
-                        style={{ width: `${(milestone.value / milestone.max) * 100}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Badges */}
+          {/* Left: Badges */}
+          <div className="md:col-span-2">
             <div className="bg-white rounded-2xl border-2 border-gray-200 p-6">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="font-bold text-gray-900 flex items-center gap-2">
                   <Award className="w-5 h-5 text-yellow-500" />
                   Badges & Achievements
                 </h3>
-                <span className="text-sm text-gray-600">
-                  {badges.filter(b => b.unlocked).length} / {badges.length} unlocked
-                </span>
+                <span className="text-sm text-gray-600">{unlockedCount} / {badges.length} unlocked</span>
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {badges.map((badge) => {
-                  const Icon = badge.icon;
-                  return (
-                    <div
-                      key={badge.id}
-                      className={`relative rounded-xl p-4 text-center ${
-                        badge.unlocked ? `bg-linear-to-br ${badge.color} text-white` : "bg-gray-100 text-gray-400"
-                      }`}
-                    >
-                      {!badge.unlocked && (
-                        <div className="absolute top-2 right-2">
-                          <Lock className="w-4 h-4" />
+
+              {(["streak", "signs", "accuracy", "games", "highscore"] as const).map(category => {
+                const categoryBadges = badges.filter(b => b.category === category);
+                return (
+                  <div key={category} className="mb-6 last:mb-0">
+                    <h4 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-3">
+                      {CATEGORY_META[category].label}
+                    </h4>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                      {categoryBadges.map(badge => (
+                        <div
+                          key={badge.id}
+                          className={`relative rounded-xl p-4 text-center ${
+                            badge.isUnlocked
+                              ? `bg-linear-to-br ${badge.gradient} text-white`
+                              : "bg-gray-100 text-gray-400"
+                          }`}
+                        >
+                          {!badge.isUnlocked && (
+                            <div className="absolute top-2 right-2">
+                              <Lock className="w-3.5 h-3.5" />
+                            </div>
+                          )}
+                          <Trophy className={`w-7 h-7 mx-auto mb-2 ${badge.isUnlocked ? "" : "opacity-30"}`} />
+                          <div className="font-bold text-xs mb-1 leading-tight">{badge.title}</div>
+                          <div className="text-xs opacity-80 leading-tight">{badge.description}</div>
                         </div>
-                      )}
-                      <Icon className="w-8 h-8 mx-auto mb-2" />
-                      <div className="font-bold text-sm mb-1">{badge.name}</div>
-                      <div className="text-xs opacity-90 line-clamp-2">{badge.description}</div>
-                      {badge.unlocked && badge.unlockedDate && (
-                        <div className="text-xs opacity-75 mt-2">{badge.unlockedDate}</div>
-                      )}
+                      ))}
                     </div>
-                  );
-                })}
-              </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
-          {/* Right Column */}
+          {/* Right: Quick Stats */}
           <div className="space-y-6">
             <div className="bg-white rounded-2xl border-2 border-gray-200 p-6">
               <h3 className="font-bold text-gray-900 mb-4">Quick Stats</h3>
               <div className="space-y-4">
-                <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
-                  <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
-                    <Target className="w-5 h-5 text-white" />
+                {[
+                  { label: "Games Played",       value: stats?.gamesPlayed ?? 0,  bg: "bg-purple-50", iconBg: "bg-purple-500", icon: <Trophy className="w-5 h-5 text-white" /> },
+                  { label: "Longest Streak",      value: `${streak} ${streak === 1 ? "day" : "days"}`, bg: "bg-green-50",  iconBg: "bg-green-500",  icon: <Flame className="w-5 h-5 text-white" /> },
+                  { label: "Memory High Score",   value: stats?.memoryHigh ?? 0,  bg: "bg-sky-50",    iconBg: "bg-sky-500",    icon: <Trophy className="w-5 h-5 text-white" /> },
+                  { label: "Combos High Score",   value: stats?.comboHigh ?? 0,   bg: "bg-violet-50", iconBg: "bg-violet-500", icon: <Trophy className="w-5 h-5 text-white" /> },
+                  { label: "Battle High Score",   value: stats?.battleHigh ?? 0,  bg: "bg-orange-50", iconBg: "bg-orange-500", icon: <Trophy className="w-5 h-5 text-white" /> },
+                ].map(({ label, value, bg, iconBg, icon }) => (
+                  <div key={label} className={`flex items-center gap-3 p-3 ${bg} rounded-lg`}>
+                    <div className={`w-10 h-10 ${iconBg} rounded-lg flex items-center justify-center shrink-0`}>
+                      {icon}
+                    </div>
+                    <div>
+                      <div className="text-sm text-gray-600">{label}</div>
+                      {loading
+                        ? <div className="h-5 w-12 bg-gray-200 animate-pulse rounded mt-1" />
+                        : <div className="font-bold text-gray-900">{value}</div>
+                      }
+                    </div>
                   </div>
-                  <div>
-                    <div className="text-sm text-gray-600">Global Rank</div>
-                    <div className="font-bold text-gray-900">#42</div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 p-3 bg-purple-50 rounded-lg">
-                  <div className="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center">
-                    <Trophy className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <div className="text-sm text-gray-600">Games Won</div>
-                    <div className="font-bold text-gray-900">35</div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
-                  <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
-                    <Flame className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <div className="text-sm text-gray-600">Best Streak</div>
-                    <div className="font-bold text-gray-900">12 days</div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 p-3 bg-orange-50 rounded-lg">
-                  <div className="w-10 h-10 bg-orange-500 rounded-lg flex items-center justify-center">
-                    <Calendar className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <div className="text-sm text-gray-600">Days Active</div>
-                    <div className="font-bold text-gray-900">21</div>
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
 
-            <div className="bg-linear-to-br from-purple-500 to-pink-600 rounded-2xl p-6 text-white">
-              <Target className="w-12 h-12 mb-4" />
-              <h3 className="font-bold text-xl mb-2">Next Milestone</h3>
-              <p className="text-sm opacity-90 mb-4">
-                33 more signs to reach 100 and unlock the Century Club badge!
-              </p>
-              <div className="w-full bg-white/20 rounded-full h-2 mb-2">
-                <div className="bg-white rounded-full h-2" style={{ width: "67%" }} />
+            {nextMilestone && (
+              <div className="bg-linear-to-br from-purple-500 to-pink-600 rounded-2xl p-6 text-white">
+                <Target className="w-12 h-12 mb-4" />
+                <h3 className="font-bold text-xl mb-2">Next Milestone</h3>
+                <p className="text-sm opacity-90 mb-4">
+                  {nextMilestone.goal - signsLearned} more {nextMilestone.label}
+                </p>
+                <div className="w-full bg-white/20 rounded-full h-2 mb-2">
+                  <div
+                    className="bg-white rounded-full h-2 transition-all"
+                    style={{ width: `${Math.min(100, (signsLearned / nextMilestone.goal) * 100)}%` }}
+                  />
+                </div>
+                <div className="text-xs opacity-90">
+                  {Math.round((signsLearned / nextMilestone.goal) * 100)}% complete
+                </div>
               </div>
-              <div className="text-xs opacity-90">67% complete</div>
-            </div>
+            )}
           </div>
         </div>
       </main>

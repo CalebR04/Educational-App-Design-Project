@@ -1,5 +1,9 @@
-import type { LessonStep } from "./alphabet";
+import type { LessonStep, ParameterField } from "./alphabet";
 import type { VocabItem, SentenceItem } from "./lessonConfigs";
+import { getAllVocab } from "./practiceVocab";
+
+// Global vocab pool — built once for parameter-quiz distractor diversity
+const GLOBAL_VOCAB = Object.values(getAllVocab());
 
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -144,6 +148,61 @@ function makeSynthesizeStep(word: string, idSuffix = ""): LessonStep {
   };
 }
 
+// ── Parameter quiz step builder ────────────────────────────────────────
+
+const PARAM_PROMPTS: Record<ParameterField, string[]> = {
+  movement:  ["What is the correct movement for this sign?", "How does the hand move in this sign?", "Identify the movement used in this sign:"],
+  handshape: ["What handshape does this sign use?", "Which handshape is correct for this sign?", "Identify the handshape for this sign:"],
+  location:  ["Where is this sign performed?", "What is the location of this sign?", "Where on the body does this sign occur?"],
+};
+
+// Generic fallback values when the pool can't supply enough unique distractors
+const PARAM_FALLBACKS: Record<ParameterField, string[]> = {
+  handshape: ["Open-5", "Fist-A", "Flat-B", "1-hand", "C-hand", "H-hand", "Bent-B", "Bent-1"],
+  location:  ["Neutral space", "Chin", "Forehead", "Chest", "Temple", "Non-dominant palm", "Cheek"],
+  movement:  ["Circular", "Double Tap", "Outward sweep", "Arc upward", "Forward slide", "Drag and close", "Slow upward drag"],
+};
+
+function makeParameterQuizStep(
+  item: VocabItem,
+  field: ParameterField,
+  pool: VocabItem[],
+  idSuffix = "",
+): LessonStep {
+  const correct = item.parameters![field];
+
+  // Collect unique distractor values from the global pool (other signs with this field defined)
+  const distractors = shuffle(
+    [...new Set(
+      pool
+        .filter(v => v.key !== item.key && v.parameters?.[field] && v.parameters[field] !== correct)
+        .map(v => v.parameters![field]),
+    )],
+  ).slice(0, 3);
+
+  // Back-fill with generic fallbacks if the pool is thin
+  for (const fallback of PARAM_FALLBACKS[field]) {
+    if (distractors.length >= 3) break;
+    if (fallback !== correct && !distractors.includes(fallback)) distractors.push(fallback);
+  }
+
+  return {
+    id: `param-quiz-${item.key}-${field}${idSuffix}`,
+    type: "parameter_quiz",
+    prompt: shuffle(PARAM_PROMPTS[field])[0],
+    mediaType: item.mediaType,
+    imageUrl: item.mediaType === "image" ? item.mediaSrc : undefined,
+    videoUrl: item.mediaType === "video" ? item.mediaSrc : undefined,
+    options: shuffle([correct, ...distractors.slice(0, 3)]).map(v => ({ id: v, label: v })),
+    correctAnswer: correct,
+    parameterField: field,
+    wordKey: item.key,
+  };
+}
+
+// Cycle order for which parameter field to quiz next
+const PARAM_FIELD_CYCLE: ParameterField[] = ["movement", "handshape", "location"];
+
 // ── Word pools for synthesize steps ───────────────────────────────────────
 
 // Words using ONLY letters A–M
@@ -184,11 +243,19 @@ function filterWordsByLetters(words: string[], available: Set<string>): string[]
  * For each chunk:
  *   Teach all → Quiz (shuffled) → Match (if ≥4 seen) → Type 2 items
  *
- * For letter lessons: add Synthesize words after chunks of ≥5 seen letters
+ * Adaptive interleaving: for every 5 new signs taught, injects 1 weak sign
+ *   review step (quiz or type) from a previous lesson to reinforce memory.
+ *
+ * For letter lessons: add Synthesize words after chunks of ≥5 seen letters.
+ *   Synthesize steps also serve as a break from dense video-based sign sessions.
  *
  * Final review (if >1 chunk): quiz + type mix over all vocab
  */
-export function generateSteps(vocab: VocabItem[], sentences: SentenceItem[] = []): LessonStep[] {
+export function generateSteps(
+  vocab: VocabItem[],
+  sentences: SentenceItem[] = [],
+  weakSigns: VocabItem[] = [],
+): LessonStep[] {
   if (!vocab.length) return [];
 
   const isLetterLesson = vocab[0].key.startsWith("letter_");
@@ -202,6 +269,31 @@ export function generateSteps(vocab: VocabItem[], sentences: SentenceItem[] = []
 
   const AM_LETTERS = new Set("ABCDEFGHIJKLM".split(""));
 
+  // ── Parameter-quiz injection state ────────────────────────────────────────
+  // Cycles through movement → handshape → location so each field gets equal exposure.
+  let paramFieldIndex = 0;
+
+  // ── Adaptive interleaving state ────────────────────────────────────────────
+  // Exclude any weak signs that overlap with the current lesson vocab
+  const currentKeys = new Set(vocab.map(v => v.key));
+  const weakQueue   = shuffle(weakSigns.filter(w => !currentKeys.has(w.key)));
+  let   nextWeakAt  = 5; // inject after every 5th new sign is taught
+
+  function injectWeakSignReviews() {
+    while (seen.length >= nextWeakAt && weakQueue.length > 0) {
+      const weakItem  = weakQueue.shift()!;
+      const distPool  = shuffle([...seen, weakItem]).filter(v => v.key !== weakItem.key).slice(0, 3);
+      // Alternate between quiz and type to vary the experience
+      const useType   = (nextWeakAt / 5) % 2 === 0;
+      steps.push(
+        useType
+          ? makeTypeStep(weakItem, `-review-${nextWeakAt}`)
+          : makeQuizStep(weakItem, [weakItem, ...distPool], `-review-${nextWeakAt}`),
+      );
+      nextWeakAt += 5;
+    }
+  }
+
   for (let ci = 0; ci < chunks.length; ci++) {
     const chunk = chunks[ci];
     const isFirstChunk = ci === 0;
@@ -209,6 +301,9 @@ export function generateSteps(vocab: VocabItem[], sentences: SentenceItem[] = []
     // Teach
     for (const item of chunk) steps.push(makeTeachStep(item));
     seen.push(...chunk);
+
+    // Inject weak-sign review steps after every 5 new signs taught
+    injectWeakSignReviews();
 
     // First chunk: quiz + match only (select-only — no typing yet)
     // Later chunks: quiz + match + type questions
@@ -226,6 +321,17 @@ export function generateSteps(vocab: VocabItem[], sentences: SentenceItem[] = []
     if (!isFirstChunk) {
       for (const item of shuffle(chunk)) {
         steps.push(makeTypeStep(item, `-c${ci}`));
+      }
+    }
+
+    // Parameter quiz — one per non-first chunk, only for video-sign lessons with parameters
+    if (!isFirstChunk && !isLetterLesson) {
+      const paramItems = chunk.filter(v => v.parameters);
+      if (paramItems.length > 0) {
+        const paramItem = shuffle(paramItems)[0];
+        const field = PARAM_FIELD_CYCLE[paramFieldIndex % PARAM_FIELD_CYCLE.length];
+        paramFieldIndex++;
+        steps.push(makeParameterQuizStep(paramItem, field, GLOBAL_VOCAB, `-c${ci}`));
       }
     }
 
@@ -258,6 +364,16 @@ export function generateSteps(vocab: VocabItem[], sentences: SentenceItem[] = []
         steps.push(makeQuizStep(item, shuffledVocab, `-final`));
       }
     });
+
+    // Parameter quiz pass — one step per parameterised sign, cycling through fields
+    if (!isLetterLesson) {
+      const paramVocab = shuffle(shuffledVocab.filter(v => v.parameters));
+      for (const [i, item] of paramVocab.entries()) {
+        const field = PARAM_FIELD_CYCLE[(paramFieldIndex + i) % PARAM_FIELD_CYCLE.length];
+        steps.push(makeParameterQuizStep(item, field, GLOBAL_VOCAB, `-final-param-${i}`));
+      }
+      paramFieldIndex += paramVocab.length;
+    }
 
     // Extra synthesize words at end of letter lessons
     if (isLetterLesson) {

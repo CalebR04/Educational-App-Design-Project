@@ -109,7 +109,7 @@ function AuthInner() {
         return;
       }
       setLoading(false);
-      router.push("/lessons");
+      router.push("/");
       router.refresh();
       return;
     }
@@ -134,7 +134,7 @@ function AuthInner() {
     }
 
     setLoading(false);
-    router.push("/lessons");
+    router.push("/");
     router.refresh();
   };
 

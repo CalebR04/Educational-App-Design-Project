@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Play, CheckCircle2, RefreshCcw, Trophy, ArrowRight, LogOut, Timer, Flame } from 'lucide-react';
 import Navbar from "../../../components/Navbar";
+import { addGameScore, updateGameHighScore, fetchGameHighScores } from "@/lib/supabase/userStats";
 
 interface Sign {
   id: string;
@@ -55,6 +56,8 @@ const battlePhrases = [
 
 export default function BattlePage() {
   const [mounted, setMounted] = useState(false);
+  const [highScore, setHighScore] = useState(0);
+  const scoreSavedRef = useRef(false);
   const [gameStarted, setGameStarted] = useState(false);
   const [difficulty, setDifficulty] = useState<'easy' | 'normal' | 'hard'>('normal');
   const [timeLeft, setTimeLeft] = useState(60);
@@ -106,11 +109,21 @@ export default function BattlePage() {
   // Initialize
   useEffect(() => {
     setMounted(true);
+    fetchGameHighScores().then(s => setHighScore(s.battleHigh));
   }, []);
+
+  // Save score when game ends
+  useEffect(() => {
+    if (!gameOver || !gameStarted || scoreSavedRef.current) return;
+    scoreSavedRef.current = true;
+    if (playerScore > 0) addGameScore(playerScore, "battle");
+    if (playerScore > highScore) updateGameHighScore("battle", playerScore);
+  }, [gameOver]);
 
   const shuffleArray = (array: any[]) => [...array].sort(() => 0.5 - Math.random());
 
   const startGame = () => {
+    scoreSavedRef.current = false;
     setGameStarted(true);
     setTimeLeft(60);
     setPlayerScore(0);

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { X, CheckCircle2, XCircle, RefreshCcw } from "lucide-react";
+import { X, CheckCircle2, XCircle, RefreshCcw, Lightbulb } from "lucide-react";
 import { staticLessons, dynamicLessonConfigs } from "@/data/lessons/lessonRegistry";
 import { generateSteps } from "@/data/lessons/generateSteps";
 import type { LessonStep } from "@/data/lessons/alphabet";
@@ -18,10 +18,10 @@ async function trackWordProgress(wordKey: string, isCorrect: boolean) {
 
   const { data: existing } = await supabase
     .from("word_progress")
-    .select("attempts, correct, streak")
+    .select("attempts, correct, streak, is_learned")
     .eq("user_id", user.id)
     .eq("word_key", wordKey)
-    .single();
+    .maybeSingle();
 
   const prevStreak = existing?.streak ?? 0;
   const rawStreak = isCorrect ? prevStreak + 1 : 0;
@@ -31,6 +31,7 @@ async function trackWordProgress(wordKey: string, isCorrect: boolean) {
   const newAttempts = mastered ? (existing?.correct ?? 0) + 1 : (existing?.attempts ?? 0) + 1;
   const newCorrect  = mastered ? newAttempts : (existing?.correct ?? 0) + (isCorrect ? 1 : 0);
   const newStreak   = mastered ? 0 : rawStreak;
+  const isLearned   = existing?.is_learned === true || (newAttempts >= 3 && newCorrect / newAttempts >= 0.8);
 
   await supabase.from("word_progress").upsert({
     user_id: user.id,
@@ -38,6 +39,7 @@ async function trackWordProgress(wordKey: string, isCorrect: boolean) {
     attempts: newAttempts,
     correct: newCorrect,
     streak: newStreak,
+    is_learned: isLearned,
     updated_at: new Date().toISOString(),
   }, { onConflict: "user_id,word_key" });
 }
@@ -76,50 +78,42 @@ export default function LessonPlayer() {
   const skipSaveRef = useRef(false);
   const everCompletedRef = useRef(false);
 
-  // Load saved progress
+  // Load saved progress from Supabase
   useEffect(() => {
     if (!steps.length) { setMounted(true); return; }
-    const saved = localStorage.getItem(`sign_quest_progress_${lessonId}`);
-    if (saved) {
-      const p = JSON.parse(saved);
-      savedProgressRef.current = p;
-      if (p.everCompleted) everCompletedRef.current = true;
-      if (p.status === "Completed") {
-        setIsFinished(true);
-      } else {
-        const stepMap = new Map(steps.map(s => [s.id, s]));
-        const rebuilt = (p.queue || []).map((s: LessonStep) => {
-          const baseId = s.id.replace(/-retry-\d+$/, "");
-          return stepMap.get(s.id) ?? stepMap.get(baseId) ?? s;
-        });
-        setQueue(rebuilt.length ? rebuilt : steps);
-        setCurrentIndex(p.currentIndex || 0);
-        setCorrectCount(p.correctCount || 0);
+    async function load() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabase
+          .from("lesson_progress")
+          .select("status, progress, ever_completed, correct_count")
+          .eq("user_id", user.id)
+          .eq("lesson_id", lessonId)
+          .single();
+        if (data) {
+          if (data.ever_completed) everCompletedRef.current = true;
+          const progressPct = data.progress ?? 0;
+          const correctCount = data.correct_count ?? 0;
+          const currentIndex = Math.round((progressPct / 100) * steps.length);
+          savedProgressRef.current = { status: data.status, progress: progressPct, correctCount, currentIndex, queue: steps, everCompleted: data.ever_completed };
+          setCorrectCount(correctCount);
+          setCurrentIndex(Math.min(currentIndex, steps.length - 1));
+        }
       }
-    } else {
       setQueue(steps);
+      setMounted(true);
+      if (dynConfig?.tip) setShowTip(true);
     }
-    setMounted(true);
-    if (dynConfig?.tip) setShowTip(true);
+    load();
   }, [lessonId, steps, dynConfig]);
 
-  // Save progress
+  // Save progress to Supabase
   useEffect(() => {
     if (!mounted || isFinished || skipSaveRef.current || !queue.length) return;
     const progressPct = Math.min(100, Math.round((correctCount / steps.length) * 100));
     const status = correctCount === 0 ? "Not Started" : "In Progress";
-    const progressData = {
-      status,
-      progress: progressPct,
-      correctCount,
-      currentIndex,
-      queue,
-      everCompleted: everCompletedRef.current,
-    };
-    localStorage.setItem(`sign_quest_progress_${lessonId}`, JSON.stringify(progressData));
-    savedProgressRef.current = progressData;
     upsertLessonProgress(lessonId, { status: status as "Not Started" | "In Progress", progress: progressPct, ever_completed: everCompletedRef.current, correct_count: correctCount });
-  }, [currentIndex, queue, correctCount, mounted, isFinished, lessonId, steps.length]);
+  }, [currentIndex, correctCount, mounted, isFinished, lessonId, steps.length, queue.length]);
 
   // Warn on close mid-lesson
   useEffect(() => {
@@ -151,17 +145,9 @@ export default function LessonPlayer() {
   const progress = practiceAgain && savedProgressRef.current ? savedProgressRef.current.progress : calculatedProgress;
 
   const getRetryHint = (s: LessonStep) => {
-    if (s.type === "sentence") return "Watch each sign carefully and type the full English sentence.";
-    if (s.type === "type") {
-      return s.acceptedAnswers && s.acceptedAnswers.length > 1
-        ? `Accepted: ${s.acceptedAnswers.slice(0, 2).join(" or ")}`
-        : s.description ?? "Look at the handshape carefully and type what you see.";
-    }
-    if (s.description) return s.description;
-    if (s.type === "quiz") return "Compare the sign in the video/image with each option.";
-    if (s.type === "match") return "Watch each option and find the one matching the label.";
-    if (s.type === "synthesize") return `This spells a ${s.correctAnswer?.length ?? "?"}-letter word.`;
-    return "Try again and pay attention to the handshape.";
+    if (s.type === "sentence") return "Watch each sign and try again.";
+    if (s.mediaType === "video") return "Review the video and try again.";
+    return "Review the image and try again.";
   };
 
   const handleCheck = () => {
@@ -183,7 +169,7 @@ export default function LessonPlayer() {
 
     const wordKey = step.wordKey ?? (step.correctAnswer ? `letter_${step.correctAnswer.toLowerCase()}` : null);
 
-    // On retry (second chance): wrong = fail, push to back
+    // Second attempt wrong → auto-reveal
     if (wrongPhase === "retry" && !isCorrect) {
       handleReveal();
       return;
@@ -248,18 +234,12 @@ export default function LessonPlayer() {
       setIsFinished(true);
       setPracticeAgain(false);
       everCompletedRef.current = true;
-      // Show completion screen, then immediately reset progress so next visit starts fresh
-      const reset = { status: "Not Started", progress: 0, correctCount: 0, currentIndex: 0, queue: [], everCompleted: true };
-      localStorage.setItem(`sign_quest_progress_${lessonId}`, JSON.stringify(reset));
-      savedProgressRef.current = reset;
       upsertLessonProgress(lessonId, { status: "Not Started", progress: 0, ever_completed: true, correct_count: 0 });
     }
   };
 
   const handleReset = () => {
-    const resetData = { status: "Not Started", progress: 0, correctCount: 0, currentIndex: 0, queue: [], everCompleted: everCompletedRef.current };
-    localStorage.setItem(`sign_quest_progress_${lessonId}`, JSON.stringify(resetData));
-    savedProgressRef.current = resetData;
+    upsertLessonProgress(lessonId, { status: "Not Started", progress: 0, ever_completed: everCompletedRef.current, correct_count: 0 });
     skipSaveRef.current = true;
     const freshSteps = staticLesson ? staticLesson.steps : generateSteps(dynConfig!.vocab, dynConfig!.sentences);
     setQueue(freshSteps);
@@ -389,6 +369,55 @@ export default function LessonPlayer() {
           </div>
         )}
 
+        {/* PARAMETER QUIZ — show sign, pick the correct handshape / location / movement */}
+        {step.type === "parameter_quiz" && (
+          <div className="flex-1 flex flex-col items-center animate-in fade-in slide-in-from-bottom-4 min-h-0">
+            {/* Field badge */}
+            <div className="mb-2 shrink-0 self-start">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-purple-100 px-3 py-1 text-xs font-bold uppercase tracking-wider text-purple-600">
+                {step.parameterField === "handshape" && "✋ Handshape"}
+                {step.parameterField === "location"  && "📍 Location"}
+                {step.parameterField === "movement"  && "↗ Movement"}
+              </span>
+            </div>
+            {/* Sign media */}
+            <div className="flex-1 min-h-0 flex items-center justify-center w-full mb-3">
+              {step.mediaType === "video" && step.videoUrl ? (
+                <video
+                  key={step.videoUrl}
+                  src={step.videoUrl}
+                  autoPlay loop muted playsInline
+                  className="max-h-full max-w-full rounded-2xl object-cover"
+                  style={{ maxHeight: "min(100%, 14rem)" }}
+                />
+              ) : (
+                <div className="aspect-square w-auto overflow-hidden" style={{ height: "min(100%, 14rem)" }}>
+                  <img src={step.imageUrl as string} alt="Sign to analyse" className="h-full w-full object-contain mix-blend-multiply" />
+                </div>
+              )}
+            </div>
+            {/* Text-only option buttons */}
+            <div className="grid w-full gap-2 shrink-0 pb-1">
+              {step.options?.map((opt) => {
+                const isSelected = selectedAnswer === opt.id;
+                const isCorrect  = opt.id === step.correctAnswer;
+                let style = "border-slate-200 text-slate-700 hover:bg-slate-50";
+                if (feedback === "incorrect" && isCorrect) style = "border-green-500 bg-green-50 text-green-700 ring-2 ring-green-500";
+                else if (isSelected) style = feedback === "incorrect" ? "border-red-500 bg-red-50 text-red-600" : "border-purple-500 bg-purple-50 text-purple-700";
+                return (
+                  <button
+                    key={opt.id}
+                    onClick={() => !feedback && wrongPhase !== "hint" && setSelectedAnswer(opt.id)}
+                    className={`rounded-2xl border-2 py-2 px-4 text-center text-sm font-bold transition-all ${style}`}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* MATCH */}
         {step.type === "match" && (
           <div className="flex-1 min-h-0 flex items-center justify-center animate-in fade-in slide-in-from-bottom-4">
@@ -444,9 +473,9 @@ export default function LessonPlayer() {
               disabled={feedback !== null || wrongPhase === "hint"}
               placeholder="Type your answer..."
               className={`w-full shrink-0 rounded-2xl border-2 p-4 text-center text-2xl font-bold uppercase tracking-widest outline-none transition-colors placeholder:text-slate-300 ${
-                feedback === "incorrect" ? "border-red-500 bg-red-50 text-red-700" :
-                feedback === "correct"   ? "border-green-500 bg-green-50 text-green-700" :
-                wrongPhase === "hint"    ? "border-yellow-300 bg-yellow-50 text-slate-700" :
+                feedback === "incorrect"      ? "border-red-500 bg-red-50 text-red-700" :
+                feedback === "correct"        ? "border-green-500 bg-green-50 text-green-700" :
+                wrongPhase === "hint"         ? "border-yellow-300 bg-yellow-50 text-slate-700" :
                 "border-slate-200 focus:border-blue-500 text-slate-900"
               }`}
             />
@@ -470,9 +499,9 @@ export default function LessonPlayer() {
               disabled={feedback !== null || wrongPhase === "hint"}
               placeholder="Type the word here..."
               className={`w-full shrink-0 rounded-2xl border-2 p-4 text-center text-2xl font-bold uppercase tracking-widest outline-none transition-colors placeholder:text-slate-300 ${
-                feedback === "incorrect" ? "border-red-500 bg-red-50 text-red-700" :
-                feedback === "correct"   ? "border-green-500 bg-green-50 text-green-700" :
-                wrongPhase === "hint"    ? "border-yellow-300 bg-yellow-50 text-slate-700" :
+                feedback === "incorrect"      ? "border-red-500 bg-red-50 text-red-700" :
+                feedback === "correct"        ? "border-green-500 bg-green-50 text-green-700" :
+                wrongPhase === "hint"         ? "border-yellow-300 bg-yellow-50 text-slate-700" :
                 "border-slate-200 focus:border-blue-500 text-slate-900"
               }`}
             />
@@ -504,9 +533,9 @@ export default function LessonPlayer() {
               disabled={feedback !== null || wrongPhase === "hint"}
               placeholder="Type the English sentence..."
               className={`w-full shrink-0 rounded-2xl border-2 p-4 text-center text-xl font-bold uppercase tracking-wider outline-none transition-colors placeholder:text-slate-300 ${
-                feedback === "incorrect" ? "border-red-500 bg-red-50 text-red-700" :
-                feedback === "correct"   ? "border-green-500 bg-green-50 text-green-700" :
-                wrongPhase === "hint"    ? "border-yellow-300 bg-yellow-50 text-slate-700" :
+                feedback === "incorrect"      ? "border-red-500 bg-red-50 text-red-700" :
+                feedback === "correct"        ? "border-green-500 bg-green-50 text-green-700" :
+                wrongPhase === "hint"         ? "border-yellow-300 bg-yellow-50 text-slate-700" :
                 "border-slate-200 focus:border-blue-500 text-slate-900"
               }`}
             />
@@ -521,21 +550,21 @@ export default function LessonPlayer() {
 
       {/* Footer */}
       <footer className={`shrink-0 border-t-2 transition-colors ${
-        feedback === "correct"   ? "border-green-200 bg-green-100" :
-        feedback === "incorrect" ? "border-red-200 bg-red-100"     :
+        feedback === "correct"   ? "border-green-200 bg-green-100"  :
+        feedback === "incorrect" ? "border-red-200 bg-red-100"      :
         wrongPhase === "hint"    ? "border-yellow-200 bg-yellow-50" : "border-slate-100 bg-white"
       }`}>
-        <div className="mx-auto flex w-full max-w-4xl items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-4">
+        <div className="mx-auto flex w-full max-w-4xl items-center justify-between px-6 py-4 gap-4">
+          <div className="flex flex-1 min-w-0 items-center gap-4">
             {feedback === "correct" && (
               <>
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-green-500 shadow-sm"><CheckCircle2 className="h-7 w-7" /></div>
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white text-green-500 shadow-sm"><CheckCircle2 className="h-7 w-7" /></div>
                 <div className="text-xl font-black text-green-600">Excellent!</div>
               </>
             )}
             {feedback === "incorrect" && (
               <>
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-red-500 shadow-sm"><XCircle className="h-7 w-7" /></div>
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white text-red-500 shadow-sm"><XCircle className="h-7 w-7" /></div>
                 <div>
                   <div className="text-xl font-black text-red-600">Incorrect</div>
                   <div className="text-sm font-bold text-red-500">Correct answer: {step.correctAnswer}</div>
@@ -544,11 +573,8 @@ export default function LessonPlayer() {
             )}
             {wrongPhase === "hint" && !feedback && (
               <>
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-yellow-500 shadow-sm"><XCircle className="h-7 w-7" /></div>
-                <div>
-                  <div className="text-xl font-black text-yellow-600">Not Quite</div>
-                  <div className="text-sm font-bold text-yellow-500">{retryHint ?? "Look closely at the handshape."}</div>
-                </div>
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white text-yellow-500 shadow-sm"><Lightbulb className="h-7 w-7" /></div>
+                <div className="flex-1 min-w-0 text-sm font-bold text-yellow-600 leading-snug">{retryHint ?? "Try again!"}</div>
               </>
             )}
           </div>
