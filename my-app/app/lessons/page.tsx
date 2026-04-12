@@ -152,7 +152,19 @@ export default function LessonsPage() {
                 </div>
               );
             })()}
-            <ComingSoonCard icon={<MessageSquare className="h-8 w-8 text-white" />} color="from-purple-500 to-purple-600" title="Conversation Practice" desc="Build fluency through interactive scenarios." />
+            <Link href="/lessons/conversation" className="block">
+              <div className="bg-white border-2 border-gray-200 rounded-2xl p-6 hover:border-blue-500 hover:shadow-xl transition-all cursor-pointer">
+                <div className="flex items-start gap-4">
+                  <div className="w-16 h-16 bg-linear-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shrink-0">
+                    <MessageSquare className="h-8 w-8 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900 mb-1">Conversation Practice</h3>
+                    <p className="text-gray-600 text-sm">Build fluency through interactive scenarios.</p>
+                  </div>
+                </div>
+              </div>
+            </Link>
           </div>
         </div>
 

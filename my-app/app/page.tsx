@@ -18,7 +18,7 @@ export default function Home() {
 
   const signsLearned = stats?.signsLearned ?? 0;
   const totalScore   = stats?.totalScore   ?? 0;
-  const accuracy     = stats?.accuracy     ?? 100;
+  const accuracy     = stats?.accuracy ?? null;
   const streak       = stats?.streak       ?? 0;
 
   const achievementSlots = buildHomeSlots(stats);
@@ -43,7 +43,7 @@ export default function Home() {
                 {[
                   { icon: <Target className="w-4 h-4" />, label: "Signs Learned", value: `${signsLearned}` },
                   { icon: <Trophy className="w-4 h-4" />, label: "Total Score",    value: totalScore.toLocaleString() },
-                  { icon: <TrendingUp className="w-4 h-4" />, label: "Accuracy",  value: `${accuracy}%` },
+                  { icon: <TrendingUp className="w-4 h-4" />, label: "Accuracy",  value: accuracy !== null ? `${accuracy}%` : "--%"  },
                   { icon: <Flame className="w-4 h-4" />, label: "Streak",         value: `${streak} ${streak === 1 ? "day" : "days"}` },
                 ].map(({ icon, label, value }) => (
                   <div key={label} className="bg-white/20 backdrop-blur rounded-lg p-3">

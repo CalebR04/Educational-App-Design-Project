@@ -3,7 +3,7 @@ import { createClient } from "./client";
 export type UserStats = {
   signsLearned: number;
   totalScore: number;
-  accuracy: number;
+  accuracy: number | null;
   streak: number;
   displayName: string;
   gamesPlayed: number;
@@ -40,7 +40,7 @@ export async function fetchUserStats(): Promise<UserStats | null> {
         attempted.reduce((sum, w) => sum + (w.correct ?? 0) / (w.attempts ?? 1), 0)
         / attempted.length * 100
       )
-    : 100;
+    : null;
 
   return {
     signsLearned,

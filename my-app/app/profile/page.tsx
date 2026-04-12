@@ -33,7 +33,7 @@ export default function ProfilePage() {
 
   const signsLearned = stats?.signsLearned ?? 0;
   const totalScore   = stats?.totalScore   ?? 0;
-  const accuracy     = stats?.accuracy     ?? 100;
+  const accuracy     = stats?.accuracy ?? null;
   const streak       = stats?.streak       ?? 0;
   const displayName  = stats?.displayName  ?? "";
 
@@ -76,7 +76,7 @@ export default function ProfilePage() {
                 {[
                   { label: "Signs Learned", value: `${signsLearned}` },
                   { label: "Total Score",   value: totalScore.toLocaleString() },
-                  { label: "Accuracy",      value: `${accuracy}%` },
+                  { label: "Accuracy",      value: accuracy !== null ? `${accuracy}%` : "–%" },
                   { label: "Day Streak",    value: `${streak}` },
                 ].map(({ label, value }) => (
                   <div key={label} className="bg-white/20 backdrop-blur rounded-lg p-3">
