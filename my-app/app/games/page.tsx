@@ -51,7 +51,7 @@ export default function GamesPage() {
     },
     {
       title: "Sign Battle",
-      description: "Face AI opponents in fast-paced sign challenges",
+      description: "Challenge up to 3 friends in real-time ASL sign recognition",
       difficulty: "Hard",
       plays: battlePlayed,
       score: battleScore,

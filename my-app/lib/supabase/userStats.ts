@@ -90,7 +90,7 @@ export async function updateLoginStreak(): Promise<void> {
     .eq("id", user.id);
 }
 
-export async function addGameScore(points: number, game: "memory" | "combo"): Promise<void> {
+export async function addGameScore(points: number, game: "memory" | "combo" | "battle"): Promise<void> {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user || user.is_anonymous) return;

@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import { createClient } from "@/lib/supabase/client";
 import { useDarkMode } from "@/components/DarkModeProvider";
-import { Camera, Check, X, Moon, Sun, ChevronLeft } from "lucide-react";
+import { Camera, Check, X, Moon, Sun, ChevronLeft, Volume2, VolumeX } from "lucide-react";
+import { getSoundMuted, setSoundMuted } from "@/hooks/useSound";
 
 const supabase = createClient();
 
@@ -29,6 +30,7 @@ export default function ProfileSettingsPage() {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
 
   const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "available" | "taken">("idle");
+  const [muted, setMuted] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
@@ -40,6 +42,8 @@ export default function ProfileSettingsPage() {
     fullName !== savedFullName ||
     username !== savedUsername ||
     avatarFile !== null;
+
+  useEffect(() => { setMuted(getSoundMuted()); }, []);
 
   useEffect(() => {
     async function load() {
@@ -258,7 +262,7 @@ export default function ProfileSettingsPage() {
         {/* ── Accessibility section ── */}
         <div className="bg-white border-2 border-gray-200 rounded-2xl p-6 mb-6">
           <h2 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-5">Accessibility</h2>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               {darkMode ? <Moon className="h-5 w-5 text-blue-500" /> : <Sun className="h-5 w-5 text-yellow-500" />}
               <div>
@@ -271,6 +275,21 @@ export default function ProfileSettingsPage() {
               className={`relative w-12 h-6 rounded-full transition-colors duration-200 ${darkMode ? "bg-blue-500" : "bg-gray-300"}`}
             >
               <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${darkMode ? "translate-x-6" : "translate-x-0"}`} />
+            </button>
+          </div>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {muted ? <VolumeX className="h-5 w-5 text-gray-400" /> : <Volume2 className="h-5 w-5 text-green-500" />}
+              <div>
+                <p className="font-semibold text-gray-900">Sound Effects</p>
+                <p className="text-xs text-gray-500">Play sounds for correct/incorrect answers</p>
+              </div>
+            </div>
+            <button
+              onClick={() => { const next = !muted; setMuted(next); setSoundMuted(next); }}
+              className={`relative w-12 h-6 rounded-full transition-colors duration-200 ${!muted ? "bg-green-500" : "bg-gray-300"}`}
+            >
+              <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${!muted ? "translate-x-6" : "translate-x-0"}`} />
             </button>
           </div>
         </div>

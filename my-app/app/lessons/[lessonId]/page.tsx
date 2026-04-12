@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { X, CheckCircle2, XCircle, RefreshCcw, Lightbulb } from "lucide-react";
+import { useSound } from "@/hooks/useSound";
 import { staticLessons, dynamicLessonConfigs } from "@/data/lessons/lessonRegistry";
 import { generateSteps } from "@/data/lessons/generateSteps";
 import type { LessonStep } from "@/data/lessons/alphabet";
@@ -45,6 +46,7 @@ async function trackWordProgress(wordKey: string, isCorrect: boolean) {
 }
 
 export default function LessonPlayer() {
+  const { play } = useSound();
   const params = useParams();
   const lessonId = params.lessonId as string;
   const router = useRouter();
@@ -171,11 +173,13 @@ export default function LessonPlayer() {
 
     // Second attempt wrong → auto-reveal
     if (wrongPhase === "retry" && !isCorrect) {
+      play("incorrect");
       handleReveal();
       return;
     }
 
     if (isCorrect) {
+      play("correct");
       setCorrectCount(prev => Math.min(steps.length, prev + 1));
       setFeedback("correct");
       setWrongPhase("none");
@@ -231,6 +235,7 @@ export default function LessonPlayer() {
     if (currentIndex < queue.length - 1) {
       setCurrentIndex(prev => prev + 1);
     } else {
+      play("level_complete");
       setIsFinished(true);
       setPracticeAgain(false);
       everCompletedRef.current = true;

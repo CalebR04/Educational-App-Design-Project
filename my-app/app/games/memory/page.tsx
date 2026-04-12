@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { LogOut } from "lucide-react";
 import { addGameScore, fetchGameHighScores, updateGameHighScore } from "@/lib/supabase/userStats";
+import { useSound } from "@/hooks/useSound";
 
 const allLetters = [
   "a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z"
@@ -48,6 +49,7 @@ function createCards(numPairs = 9): Card[] {
 }
 
 export default function MemoryGame() {
+  const { play, playReverse } = useSound();
   const [cards, setCards] = useState<Card[]>(() => createCards());
   const [selected, setSelected] = useState<number[]>([]);
   const [score, setScore] = useState(0);
@@ -87,6 +89,8 @@ export default function MemoryGame() {
   function handleFlip(index: number) {
     if (isChecking || gameOver || cards[index].flipped || cards[index].matched) return;
 
+    play("flip");
+
     const newCards = [...cards];
     newCards[index].flipped = true;
     const newSelected = [...selected, index];
@@ -108,17 +112,20 @@ export default function MemoryGame() {
         newCards[b].matched = true;
         setCards([...newCards]);
         setScore((s) => s + 10);
+        play("correct");
 
         setTimeout(() => {
           setSelected([]);
           setIsChecking(false);
 
           if (newCards.every((c) => c.matched)) {
+            play("level_complete");
             setTimeout(nextLevel, 400);
           }
         }, 600);
       } else {
         setTimeout(() => {
+          playReverse("flip");
           newCards[a].flipped = false;
           newCards[b].flipped = false;
           setCards([...newCards]);
@@ -131,6 +138,7 @@ export default function MemoryGame() {
 
   useEffect(() => {
     if (moves <= 0 && !gameOver) {
+      play("game_over");
       setGameOver(true);
       if (score > 0) addGameScore(score, "memory");
       setScore(0);

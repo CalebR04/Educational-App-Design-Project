@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { addGameScore, fetchGameHighScores, updateGameHighScore } from "@/lib/supabase/userStats";
+import { useSound } from "@/hooks/useSound";
 import { Play, CheckCircle2, RefreshCcw, BookOpen, MoveHorizontal, Lightbulb, Trophy, ArrowRight, Info, X, LogOut } from 'lucide-react';
 
 interface Sign {
@@ -53,6 +54,7 @@ export default function SignComboPage() {
   const [gamePhrases, setGamePhrases] = useState<typeof allPhrases>([]);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [workArea, setWorkArea] = useState<Sign[]>([]);
+  const { play } = useSound();
   const [currentBank, setCurrentBank] = useState<Sign[]>([]);
   
   // Game & Score State
@@ -127,9 +129,11 @@ export default function SignComboPage() {
     if (correctPositions === target.length) {
       pointsEarned = 150;
       setIsCorrect(true);
+      play("correct");
     } else {
       pointsEarned = correctSigns * 15;
       setIsCorrect(false);
+      play("incorrect");
     }
 
     if (!hasBeenScored) {
@@ -144,6 +148,7 @@ export default function SignComboPage() {
 
   const handleNextPhrase = () => {
     if (currentIdx === 4) {
+      play("game_over");
       setGameOver(true);
       setGamesPlayed(prev => prev + 1);
       if (score > 0) addGameScore(score, "combo");
