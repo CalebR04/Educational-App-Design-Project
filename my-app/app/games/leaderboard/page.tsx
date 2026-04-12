@@ -2,32 +2,66 @@
 
 import Navbar from "../../../components/Navbar";
 import Link from "next/link";
-import { Trophy, Medal } from "lucide-react";
+import { Trophy, Medal, User } from "lucide-react";
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 interface LeaderboardEntry {
   rank: number;
   name: string;
   score: number;
-  signsLearned: number;
-  accuracy: number;
+  gamesPlayed: number;
   streak: number;
-  isYou?: boolean;
+  avatarUrl: string | null;
+  isYou: boolean;
 }
 
-const globalLeaderboard: LeaderboardEntry[] = [
-  { rank: 1, name: "SignMaster_Pro", score: 15000, signsLearned: 95, accuracy: 96, streak: 42 },
-  { rank: 2, name: "ASL_Guru", score: 14200, signsLearned: 89, accuracy: 94, streak: 38 },
-  { rank: 3, name: "HandTalker", score: 13950, signsLearned: 87, accuracy: 92, streak: 35 },
-  { rank: 4, name: "SilentWave", score: 13500, signsLearned: 84, accuracy: 91, streak: 30 },
-  { rank: 5, name: "GestureKing", score: 12900, signsLearned: 79, accuracy: 89, streak: 28 },
-  { rank: 6, name: "Signify", score: 12000, signsLearned: 76, accuracy: 88, streak: 25 },
-  { rank: 7, name: "Trendy", score: 11850, signsLearned: 73, accuracy: 87, streak: 22 },
-  { rank: 42, name: "You", score: 2340, signsLearned: 67, accuracy: 78, streak: 7, isYou: true },
-];
-
-const yourEntry = globalLeaderboard.find(e => e.isYou)!;
-
 export default function LeaderboardPage() {
+  const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
+  const [yourEntry, setYourEntry] = useState<LeaderboardEntry | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      const myId = user?.is_anonymous ? null : user?.id ?? null;
+
+      const { data: rows } = await supabase
+        .from("profiles")
+        .select("id, full_name, username, total_game_score, games_played, login_streak, avatar_url")
+        .order("total_game_score", { ascending: false })
+        .limit(100);
+
+      if (!rows) { setLoading(false); return; }
+
+      const built: LeaderboardEntry[] = rows.map((row, i) => ({
+        rank: i + 1,
+        name: row.full_name || row.username || "Anonymous",
+        score: row.total_game_score ?? 0,
+        gamesPlayed: row.games_played ?? 0,
+        streak: row.login_streak ?? 0,
+        avatarUrl: row.avatar_url ?? null,
+        isYou: row.id === myId,
+      }));
+
+      setEntries(built);
+      setYourEntry(built.find(e => e.isYou) ?? null);
+      setLoading(false);
+    }
+    load();
+  }, []);
+
+  const top3   = entries.slice(0, 3);
+  const rest   = entries.slice(3);
+  // If user is outside top 7, show them separately at the bottom
+  const visibleRest = rest.slice(0, 7);
+  const yourEntryBelow = yourEntry && yourEntry.rank > 10 ? yourEntry : null;
+
+  const pointsToRankUp = yourEntry
+    ? (entries[yourEntry.rank - 2]?.score ?? yourEntry.score) - yourEntry.score
+    : 0;
+
   return (
     <div className="min-h-screen bg-white">
       <Navbar active="Games" />
@@ -52,34 +86,49 @@ export default function LeaderboardPage() {
         </div>
 
         {/* Your Rank Card */}
-        <div className="bg-linear-to-br from-blue-500 to-purple-600 rounded-2xl p-6 text-white mb-8">
-          <div className="flex items-start justify-between mb-4">
-            <div>
-              <div className="text-sm opacity-90 mb-1">Your Current Rank</div>
-              <div className="text-5xl font-bold">#{yourEntry.rank}</div>
-            </div>
-            <div className="text-sm opacity-90"><span className="font-bold">300</span> points to rank up</div>
-          </div>
-
-          <div className="grid grid-cols-4 gap-4">
-            <div className="bg-white/20 backdrop-blur rounded-lg p-3">
-              <div className="text-2xl font-bold">{yourEntry.score}</div>
-              <div className="text-xs opacity-90">Score</div>
-            </div>
-            <div className="bg-white/20 backdrop-blur rounded-lg p-3">
-              <div className="text-2xl font-bold">{yourEntry.signsLearned}</div>
-              <div className="text-xs opacity-90">Signs</div>
-            </div>
-            <div className="bg-white/20 backdrop-blur rounded-lg p-3">
-              <div className="text-2xl font-bold">{yourEntry.accuracy}%</div>
-              <div className="text-xs opacity-90">Accuracy</div>
-            </div>
-            <div className="bg-white/20 backdrop-blur rounded-lg p-3">
-              <div className="text-2xl font-bold">{yourEntry.streak}</div>
-              <div className="text-xs opacity-90">Streak</div>
+        {loading ? (
+          <div className="bg-linear-to-br from-blue-500 to-purple-600 rounded-2xl p-6 text-white mb-8 animate-pulse">
+            <div className="h-4 w-32 bg-white/30 rounded mb-2" />
+            <div className="h-12 w-24 bg-white/30 rounded mb-4" />
+            <div className="grid grid-cols-3 gap-4">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="bg-white/20 rounded-lg p-3 h-16" />
+              ))}
             </div>
           </div>
-        </div>
+        ) : yourEntry ? (
+          <div className="bg-linear-to-br from-blue-500 to-purple-600 rounded-2xl p-6 text-white mb-8">
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <div className="text-sm opacity-90 mb-1">Your Current Rank</div>
+                <div className="text-5xl font-bold">#{yourEntry.rank}</div>
+              </div>
+              {yourEntry.rank > 1 && (
+                <div className="text-sm opacity-90">
+                  <span className="font-bold">{pointsToRankUp.toLocaleString()}</span> points to rank up
+                </div>
+              )}
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="bg-white/20 backdrop-blur rounded-lg p-3">
+                <div className="text-2xl font-bold">{yourEntry.score.toLocaleString()}</div>
+                <div className="text-xs opacity-90">Score</div>
+              </div>
+              <div className="bg-white/20 backdrop-blur rounded-lg p-3">
+                <div className="text-2xl font-bold">{yourEntry.gamesPlayed}</div>
+                <div className="text-xs opacity-90">Games</div>
+              </div>
+              <div className="bg-white/20 backdrop-blur rounded-lg p-3">
+                <div className="text-2xl font-bold">{yourEntry.streak}</div>
+                <div className="text-xs opacity-90">Streak</div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-linear-to-br from-blue-500 to-purple-600 rounded-2xl p-6 text-white mb-8 text-center">
+            <p className="font-semibold opacity-90">Sign in to see your rank</p>
+          </div>
+        )}
 
         {/* Leaderboard Table */}
         <div className="bg-white rounded-2xl border-2 border-gray-200 overflow-hidden">
@@ -90,87 +139,162 @@ export default function LeaderboardPage() {
 
               {/* 2nd */}
               <div className="flex-1 text-center">
-                <div className="w-20 h-20 bg-gray-300 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <Medal className="w-10 h-10 text-gray-700" />
-                </div>
+                {loading
+                  ? <div className="w-20 h-20 rounded-full bg-gray-200 animate-pulse mx-auto mb-3" />
+                  : <AvatarCircle entry={top3[1] ?? null} size="md" />
+                }
                 <div className="bg-white rounded-xl p-4 shadow-lg border-2 border-gray-300">
                   <div className="text-2xl font-bold text-gray-900">2</div>
-                  <div className="font-semibold text-gray-900 mb-1">{globalLeaderboard[1].name}</div>
-                  <div className="text-sm text-gray-600">{globalLeaderboard[1].score} pts</div>
+                  {loading ? (
+                    <div className="h-4 w-20 bg-gray-200 animate-pulse rounded mx-auto my-1" />
+                  ) : (
+                    <div className="font-semibold text-gray-900 mb-1 truncate">{top3[1]?.name ?? "—"}</div>
+                  )}
+                  <div className="text-sm text-gray-600">{loading ? "—" : `${(top3[1]?.score ?? 0).toLocaleString()} pts`}</div>
                 </div>
               </div>
 
               {/* 1st */}
               <div className="flex-1 text-center -translate-y-4">
-                <div className="w-24 h-24 bg-linear-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center mx-auto mb-3 shadow-xl">
-                  <Trophy className="w-12 h-12 text-white" />
-                </div>
+                {loading
+                  ? <div className="w-24 h-24 rounded-full bg-gray-200 animate-pulse mx-auto mb-3" />
+                  : <AvatarCircle entry={top3[0] ?? null} size="lg" gold />
+                }
                 <div className="bg-white rounded-xl p-6 shadow-2xl border-2 border-yellow-400">
                   <div className="text-3xl font-bold text-yellow-600">1</div>
-                  <div className="font-bold text-gray-900 mb-1 text-lg">{globalLeaderboard[0].name}</div>
-                  <div className="text-sm text-gray-600">{globalLeaderboard[0].score} pts</div>
+                  {loading ? (
+                    <div className="h-5 w-24 bg-gray-200 animate-pulse rounded mx-auto my-1" />
+                  ) : (
+                    <div className="font-bold text-gray-900 mb-1 text-lg truncate">{top3[0]?.name ?? "—"}</div>
+                  )}
+                  <div className="text-sm text-gray-600">{loading ? "—" : `${(top3[0]?.score ?? 0).toLocaleString()} pts`}</div>
                 </div>
               </div>
 
               {/* 3rd */}
               <div className="flex-1 text-center">
-                <div className="w-20 h-20 bg-orange-300 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <Medal className="w-10 h-10 text-orange-900" />
-                </div>
+                {loading
+                  ? <div className="w-20 h-20 rounded-full bg-gray-200 animate-pulse mx-auto mb-3" />
+                  : <AvatarCircle entry={top3[2] ?? null} size="md" bronze />
+                }
                 <div className="bg-white rounded-xl p-4 shadow-lg border-2 border-orange-300">
                   <div className="text-2xl font-bold text-gray-900">3</div>
-                  <div className="font-semibold text-gray-900 mb-1">{globalLeaderboard[2].name}</div>
-                  <div className="text-sm text-gray-600">{globalLeaderboard[2].score} pts</div>
+                  {loading ? (
+                    <div className="h-4 w-20 bg-gray-200 animate-pulse rounded mx-auto my-1" />
+                  ) : (
+                    <div className="font-semibold text-gray-900 mb-1 truncate">{top3[2]?.name ?? "—"}</div>
+                  )}
+                  <div className="text-sm text-gray-600">{loading ? "—" : `${(top3[2]?.score ?? 0).toLocaleString()} pts`}</div>
                 </div>
               </div>
 
             </div>
           </div>
 
-          {/* Rankings */}
+          {/* Rankings 4+ */}
           <div className="divide-y divide-gray-200">
-            {globalLeaderboard.slice(3).map((entry) => (
-              <div
-                key={entry.rank}
-                className={`p-4 transition-colors ${
-                  entry.isYou ? "bg-blue-50 border-l-4 border-blue-500" : "hover:bg-gray-50"
-                }`}
-              >
-                <div className="flex items-center gap-4">
-                  <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg ${
-                    entry.isYou ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-600"
-                  }`}>
-                    {entry.rank}
-                  </div>
-
-                  <div className="flex-1">
-                    <div className="font-bold text-gray-900">{entry.name}</div>
-                    <div className="text-sm text-gray-600">{entry.signsLearned} signs learned</div>
-                  </div>
-
-                  <div className="hidden md:flex items-center gap-6 text-sm">
-                    <div className="text-center">
-                      <div className="font-bold text-gray-900">{entry.accuracy}%</div>
-                      <div className="text-xs text-gray-600">Accuracy</div>
+            {loading
+              ? [...Array(5)].map((_, i) => (
+                  <div key={i} className="p-4 flex items-center gap-4 animate-pulse">
+                    <div className="w-12 h-12 rounded-full bg-gray-200 shrink-0" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-4 w-32 bg-gray-200 rounded" />
+                      <div className="h-3 w-20 bg-gray-100 rounded" />
                     </div>
-                    <div className="text-center">
-                      <div className="font-bold text-gray-900">{entry.streak}</div>
-                      <div className="text-xs text-gray-600">Streak</div>
-                    </div>
+                    <div className="h-7 w-16 bg-gray-200 rounded" />
                   </div>
+                ))
+              : visibleRest.map((entry) => (
+                  <RankRow key={entry.rank} entry={entry} />
+                ))
+            }
 
-                  <div className="text-right">
-                    <div className="text-2xl font-bold text-gray-900">{entry.score}</div>
-                    <div className="text-xs text-gray-600">points</div>
-                  </div>
-                </div>
-              </div>
-            ))}
+            {/* Current user below top 10 */}
+            {yourEntryBelow && !loading && (
+              <>
+                <div className="px-4 py-2 text-center text-xs text-gray-400 bg-gray-50">• • •</div>
+                <RankRow entry={yourEntryBelow} />
+              </>
+            )}
           </div>
 
+          {!loading && entries.length === 0 && (
+            <div className="p-12 text-center text-gray-400">
+              <Trophy className="w-12 h-12 mx-auto mb-3 opacity-30" />
+              <p className="font-semibold">No scores yet. Be the first!</p>
+            </div>
+          )}
         </div>
 
       </main>
+    </div>
+  );
+}
+
+function AvatarCircle({
+  entry,
+  size,
+  gold,
+  bronze,
+}: {
+  entry: LeaderboardEntry | null;
+  size: "md" | "lg";
+  gold?: boolean;
+  bronze?: boolean;
+}) {
+  const dim     = size === "lg" ? "w-24 h-24" : "w-20 h-20";
+  const iconDim = size === "lg" ? "w-12 h-12" : "w-10 h-10";
+  const bg      = gold   ? "bg-linear-to-br from-yellow-400 to-yellow-600 shadow-xl"
+                : bronze ? "bg-orange-300"
+                :          "bg-gray-300";
+  const iconColor = gold ? "text-white" : "text-gray-700";
+
+  return (
+    <div className={`${dim} ${bg} rounded-full flex items-center justify-center mx-auto mb-3 overflow-hidden`}>
+      {entry?.avatarUrl ? (
+        <img src={entry.avatarUrl} alt={entry.name} className="w-full h-full object-cover" />
+      ) : gold ? (
+        <Trophy className={`${iconDim} text-white`} />
+      ) : (
+        <Medal className={`${iconDim} ${iconColor}`} />
+      )}
+    </div>
+  );
+}
+
+function RankRow({ entry }: { entry: LeaderboardEntry }) {
+  return (
+    <div
+      className={`p-4 transition-colors ${
+        entry.isYou ? "bg-blue-50 border-l-4 border-blue-500" : "hover:bg-gray-50"
+      }`}
+    >
+      <div className="flex items-center gap-4">
+        <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg shrink-0 ${
+          entry.isYou ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-600"
+        }`}>
+          {entry.rank}
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <div className="font-bold text-gray-900 truncate">
+            {entry.name}{entry.isYou && <span className="ml-2 text-xs font-semibold text-blue-500">(You)</span>}
+          </div>
+          <div className="text-sm text-gray-600">{entry.gamesPlayed} games played</div>
+        </div>
+
+        <div className="hidden md:flex items-center gap-6 text-sm shrink-0">
+          <div className="text-center">
+            <div className="font-bold text-gray-900">{entry.streak}</div>
+            <div className="text-xs text-gray-600">Streak</div>
+          </div>
+        </div>
+
+        <div className="text-right shrink-0">
+          <div className="text-2xl font-bold text-gray-900">{entry.score.toLocaleString()}</div>
+          <div className="text-xs text-gray-600">points</div>
+        </div>
+      </div>
     </div>
   );
 }
