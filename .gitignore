@@ -1,0 +1,16 @@
+# Ignore YOLO training outputs
+ASL_Detector/asl_yolo*/runs/
+
+# Ignore datasets
+ASL_Detector/asl_yolo/dataset/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Editor / environment
+.vscode/
+.runtime/
+
+# Optional: ignore all model weights
+*.pt
