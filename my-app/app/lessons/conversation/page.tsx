@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { conversationScenarios } from "@/data/conversations/scenarios";
-import { ChevronLeft, MessageSquare, X } from "lucide-react";
+import { ChevronLeft, X } from "lucide-react";
 
 export default function ConversationListPage() {
   const router = useRouter();
@@ -24,9 +24,6 @@ export default function ConversationListPage() {
             <ChevronLeft className="w-4 h-4" /> Back to Lessons
           </button>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-linear-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shrink-0">
-              <MessageSquare className="w-5 h-5 text-white" />
-            </div>
             <div className="flex-1">
               <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-1">Conversation Practice</h1>
               <p className="text-gray-600 dark:text-gray-400">Interactive ASL scenarios with a partner</p>
@@ -48,9 +45,6 @@ export default function ConversationListPage() {
               className={`flex flex-col overflow-hidden rounded-2xl bg-linear-to-br ${scenario.color} hover:shadow-xl hover:scale-[1.02] transition-all`}
             >
               <div className="p-6 text-white">
-                <div className="w-12 h-12 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center mb-3">
-                  <MessageSquare className="w-6 h-6 text-white" />
-                </div>
                 <h2 className="text-xl font-bold mb-2">{scenario.title}</h2>
                 <p className="text-white/90 text-sm mb-3">{scenario.description}</p>
                 <div className="inline-flex bg-white/20 backdrop-blur px-3 py-1 rounded-full text-sm font-semibold">

@@ -276,7 +276,7 @@ export default function TranslatorPage() {
 
         <section className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <div className="rounded-2xl border-2 border-gray-200 bg-white p-6">
-            <h2 className="mb-5 text-2xl font-bold">📷 Sign Input</h2>
+            <h2 className="mb-5 text-2xl font-bold text-gray-900">Sign Input</h2>
 
             <div className="relative flex h-[320px] items-center justify-center overflow-hidden rounded-2xl bg-[#071633]">
               <video
@@ -374,9 +374,7 @@ export default function TranslatorPage() {
           </div>
 
           <div className="rounded-2xl border-2 border-gray-200 bg-white p-6">
-            <h2 className="mb-5 text-2xl font-bold">
-              <span className="text-green-500">T</span> Text Output
-            </h2>
+            <h2 className="mb-5 text-2xl font-bold text-gray-900">Text Output</h2>
 
             <div className="flex min-h-[200px] flex-wrap content-start gap-1 rounded-2xl bg-gray-50 p-4">
               {word ? (
