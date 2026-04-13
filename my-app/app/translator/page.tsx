@@ -227,7 +227,7 @@ export default function TranslatorPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-white text-[#111827]">
+    <div className="min-h-screen bg-white text-gray-900">
       <Navbar active="Translate" />
 
       <main className="max-w-7xl mx-auto px-4 py-4">

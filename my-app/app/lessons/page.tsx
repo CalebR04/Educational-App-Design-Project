@@ -133,7 +133,7 @@ export default function LessonsPage() {
                       </div>
                       <div>
                         <h3 className="text-xl font-bold text-gray-900 mb-1">Sign Practice</h3>
-                        <p className="text-gray-600 text-sm">12 questions focused on your weakest signs. Gets smarter as you learn.</p>
+                        <p className="text-gray-600 text-sm">Questions that focus on your weakest signs. Get smarter as you learn.</p>
                       </div>
                     </div>
                   </div>

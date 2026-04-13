@@ -152,22 +152,22 @@ export default function MemoryGame() {
         {/* Header row: title + stats + exit */}
         <div className="flex items-center gap-4 mb-3">
           <div className="flex-1">
-            <h1 className="text-2xl font-bold text-black leading-tight">Sign Memory</h1>
-            <p className="text-black text-sm">Match the ASL sign to the corresponding letter!</p>
+            <h1 className="text-2xl font-bold text-gray-900 leading-tight">Sign Memory</h1>
+            <p className="text-gray-900 text-sm">Match the ASL sign to the corresponding letter!</p>
           </div>
 
           <div className="flex gap-3 shrink-0">
             <div className="flex items-center bg-white border-2 border-gray-200 rounded-xl px-3 py-2 gap-2">
               <div className="w-3 h-3 bg-blue-500 rounded-sm shrink-0"></div>
-              <div className="font-semibold text-black text-sm whitespace-nowrap">Moves: {moves}</div>
+              <div className="font-semibold text-gray-900 text-sm whitespace-nowrap">Moves: {moves}</div>
             </div>
             <div className="flex items-center bg-white border-2 border-gray-200 rounded-xl px-3 py-2 gap-2">
               <div className="w-3 h-3 bg-green-500 rounded-sm shrink-0"></div>
-              <div className="font-semibold text-black text-sm whitespace-nowrap">Score: {score}</div>
+              <div className="font-semibold text-gray-900 text-sm whitespace-nowrap">Score: {score}</div>
             </div>
             <div className="flex items-center bg-white border-2 border-gray-200 rounded-xl px-3 py-2 gap-2">
               <div className="w-3 h-3 bg-yellow-500 rounded-sm shrink-0"></div>
-              <div className="font-semibold text-black text-sm whitespace-nowrap">High Score: {highScore}</div>
+              <div className="font-semibold text-gray-900 text-sm whitespace-nowrap">High Score: {highScore}</div>
             </div>
           </div>
 
@@ -221,7 +221,7 @@ export default function MemoryGame() {
                           bg-red-100 border border-red-300 rounded-xl p-8 flex flex-col items-center shadow-lg z-10"
             >
               <h2 className="text-2xl font-bold text-red-600">Game Over!</h2>
-              <p className="mt-2 text-black text-center">You ran out of moves.</p>
+              <p className="mt-2 text-gray-900 text-center">You ran out of moves.</p>
               <div className="flex gap-3 mt-4">
                 <button
                   onClick={restartGame}

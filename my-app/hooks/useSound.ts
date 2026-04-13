@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from "react";
 
-export type SoundName = "correct" | "incorrect" | "level_complete" | "game_over" | "combo" | "flip";
+export type SoundName = "correct" | "incorrect" | "level_complete" | "game_over" | "combo" | "flip" | "theme_song";
 
 const SOUND_PATHS: Record<SoundName, string> = {
   correct:        "/sounds/correct.mp3",
@@ -9,6 +9,7 @@ const SOUND_PATHS: Record<SoundName, string> = {
   game_over:      "/sounds/game_over.mp3",
   combo:          "/sounds/combo.mp3",
   flip:           "/sounds/flip.mp3",
+  theme_song:     "/sounds/themeSong.mp3",
 };
 
 function isMuted(): boolean {
@@ -46,12 +47,20 @@ export function useSound() {
     }
   }
 
-  const play = useCallback((name: SoundName) => {
+  const play = useCallback((name: SoundName, { loop = false } = {}) => {
     if (isMuted()) return;
     const audio = cache.current[name];
     if (!audio) return;
     audio.currentTime = 0;
+    audio.loop = loop;
     audio.play().catch(() => {});
+  }, []);
+
+  const stop = useCallback((name: SoundName) => {
+    const audio = cache.current[name];
+    if (!audio) return;
+    audio.pause();
+    audio.currentTime = 0;
   }, []);
 
   const playReverse = useCallback(async (name: SoundName) => {
@@ -79,7 +88,7 @@ export function useSound() {
     source.start();
   }, []);
 
-  return { play, playReverse };
+  return { play, stop, playReverse };
 }
 
 export function getSoundMuted(): boolean {

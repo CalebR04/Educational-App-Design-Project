@@ -37,7 +37,7 @@ export default function LeaderboardPage() {
 
       const built: LeaderboardEntry[] = rows.map((row, i) => ({
         rank: i + 1,
-        name: row.full_name || row.username || "Anonymous",
+        name: row.username || row.full_name || "Anonymous",
         score: row.total_game_score ?? 0,
         gamesPlayed: row.games_played ?? 0,
         streak: row.login_streak ?? 0,

@@ -46,7 +46,17 @@ export default function BattleRoom() {
   const params   = useParams<{ code: string }>();
   const code     = params.code?.toUpperCase();
   const router   = useRouter();
-  const { play } = useSound();
+  const { play, stop } = useSound();
+
+  function handleLeave() {
+    stop("theme_song");
+    stop("correct");
+    stop("incorrect");
+    stop("combo");
+    stop("level_complete");
+    stop("game_over");
+    router.push("/games/battle");
+  }
 
   // My identity
   const [myUserId,      setMyUserId]      = useState<string | null>(null);
@@ -59,7 +69,8 @@ export default function BattleRoom() {
   const [roundCount,    setRoundCount]    = useState(7);
   const [lobbyError,    setLobbyError]    = useState<string | null>(null);
   const [copied,        setCopied]        = useState(false);
-  const [showLobbyHelp, setShowLobbyHelp] = useState(false);
+  const [showLobbyHelp,    setShowLobbyHelp]    = useState(false);
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
 
   // Players (presence)
   const [players,        setPlayers]        = useState<PlayerPresence[]>([]);
@@ -304,7 +315,12 @@ export default function BattleRoom() {
     channel.on("broadcast", { event: "GAME_OVER" }, ({ payload }: any) => {
       setScores(payload.finalScores);
       setPhase("game_over");
-      play("game_over");
+      stop("theme_song");
+      const uid = myUserIdRef.current;
+      const sortedScores = Object.entries(payload.finalScores as Record<string, number>)
+        .sort(([, a], [, b]) => b - a);
+      const myRank = sortedScores.findIndex(([id]) => id === uid) + 1;
+      play(myRank === 1 ? "level_complete" : "game_over");
       // Save this player's score to Supabase
       const myScore = payload.finalScores[myUserId] ?? 0;
       if (myScore > 0) {
@@ -340,6 +356,15 @@ export default function BattleRoom() {
     }
     if (isHostRef.current) startNextRound(0);
   }, [phase, countdown]);
+
+  // ── Theme song — plays while the sign video is shown ───────────────────
+  useEffect(() => {
+    if (phase === "round") {
+      play("theme_song", { loop: true });
+    } else {
+      stop("theme_song");
+    }
+  }, [phase]);
 
   // ── Host helpers ────────────────────────────────────────────────────────
   const startNextRound = useCallback((roundIndex: number) => {
@@ -491,7 +516,7 @@ export default function BattleRoom() {
               >
                 ?
               </button>
-              <button onClick={() => router.push("/games/battle")} className="flex items-center gap-1.5 text-xs font-semibold text-gray-400 hover:text-red-500 transition">
+              <button onClick={() => setShowLeaveConfirm(true)} className="flex items-center gap-1.5 text-xs font-semibold text-gray-400 hover:text-red-500 transition">
                 <LogOut className="w-3.5 h-3.5" /> Leave
               </button>
             </div>
@@ -607,6 +632,29 @@ export default function BattleRoom() {
             </div>
           </div>
         )}
+
+        {showLeaveConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-sm w-full shadow-2xl">
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Leave the battle?</h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">Your progress will be lost.</p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowLeaveConfirm(false)}
+                  className="flex-1 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+                >
+                  Stay
+                </button>
+                <button
+                  onClick={handleLeave}
+                  className="flex-1 py-3 rounded-xl bg-red-500 hover:bg-red-600 text-white font-bold transition"
+                >
+                  Leave
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -632,7 +680,7 @@ export default function BattleRoom() {
         <div className="border-b border-gray-200 dark:border-gray-700 px-4 py-2.5 flex items-center justify-between shrink-0">
           <span className="font-bold text-gray-900 dark:text-white text-sm">Round {currentRoundIdx + 1}/{rounds.length}</span>
           <span className="text-sm font-semibold text-gray-500 dark:text-gray-400">{(timeRemaining / 1000).toFixed(1)}s</span>
-          <button onClick={() => router.push("/games/battle")} className="text-gray-400 hover:text-red-500">
+          <button onClick={() => setShowLeaveConfirm(true)} className="text-gray-400 hover:text-red-500">
             <LogOut className="w-4 h-4" />
           </button>
         </div>
@@ -707,6 +755,19 @@ export default function BattleRoom() {
             ))}
           </div>
         </main>
+
+        {showLeaveConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-sm w-full shadow-2xl">
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Leave the battle?</h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">Your progress will be lost.</p>
+              <div className="flex gap-3">
+                <button onClick={() => setShowLeaveConfirm(false)} className="flex-1 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Stay</button>
+                <button onClick={handleLeave} className="flex-1 py-3 rounded-xl bg-red-500 hover:bg-red-600 text-white font-bold transition">Leave</button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }

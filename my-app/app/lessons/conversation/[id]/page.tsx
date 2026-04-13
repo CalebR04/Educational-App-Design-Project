@@ -6,6 +6,7 @@ import Navbar from "@/components/Navbar";
 import { conversationScenarios } from "@/data/conversations/scenarios";
 import type { ConvSign, ResponseOption } from "@/data/conversations/scenarios";
 import { ChevronLeft, CheckCircle2, XCircle, Eye, EyeOff, ArrowRight, RotateCcw, X, Trophy, MessageSquare, Play } from "lucide-react";
+import { useSound } from "@/hooks/useSound";
 
 type Phase = "partner_signing" | "responding" | "reaction" | "complete";
 
@@ -143,6 +144,7 @@ function ResponseCard({ signs, onSelect, disabled }: {
 export default function ConversationRoomPage() {
   const params  = useParams<{ id: string }>();
   const router  = useRouter();
+  const { play } = useSound();
   const scenario = conversationScenarios.find(s => s.id === params.id);
 
   const [turnIdx,         setTurnIdx]         = useState(0);
@@ -231,11 +233,15 @@ export default function ConversationRoomPage() {
     setAnswered(true);
     setIsCorrect(correct);
     if (correct) {
+      play(isLastTurn ? "level_complete" : "correct");
       setScore(s => s + 1);
       setTimeout(handleNext, 1000);
-    } else if (reactionVideo) {
-      setReactionUrl(reactionVideo);
-      setPhase("reaction");
+    } else {
+      play("incorrect");
+      if (reactionVideo) {
+        setReactionUrl(reactionVideo);
+        setPhase("reaction");
+      }
     }
   }
 

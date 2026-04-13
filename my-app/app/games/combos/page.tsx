@@ -198,7 +198,7 @@ export default function SignComboPage() {
     return (
       <div className="h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
         <Trophy size={48} className="text-yellow-500 mb-3 animate-bounce" />
-        <h1 className="text-3xl font-black text-black mb-1">Game Complete!</h1>
+        <h1 className="text-3xl font-black text-gray-900 mb-1">Game Complete!</h1>
         {score > highScore && score > 0 ? (
           <p className="text-green-600 font-bold text-lg mb-4">🎉 NEW HIGH SCORE! 🎉</p>
         ) : (
@@ -223,7 +223,7 @@ export default function SignComboPage() {
   }
 
   return (
-    <div className="h-screen bg-white text-[#111827] flex flex-col overflow-hidden">
+    <div className="h-screen bg-white text-gray-900 flex flex-col overflow-hidden">
       {/* Main Content Area */}
       <main className="w-full max-w-7xl mx-auto px-4 py-2 flex-1 flex flex-col justify-start h-full">
 
@@ -232,13 +232,13 @@ export default function SignComboPage() {
           {/* Header */}
           <div className="flex justify-between items-center shrink-0 mb-1">
             <div>
-              <h1 className="text-xl sm:text-2xl font-black text-black tracking-tight leading-none">Sign Combo</h1>
+              <h1 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight leading-none">Sign Combo</h1>
               <p className="text-blue-600 font-bold text-[10px] sm:text-xs uppercase tracking-widest mt-1">Phrase {currentIdx + 1} of 5</p>
             </div>
             <div className="flex items-center gap-3 sm:gap-6">
               <div className="text-right">
                 <p className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase leading-none">Score</p>
-                <p className="text-xl sm:text-2xl font-black text-black leading-none mt-1">{score}</p>
+                <p className="text-xl sm:text-2xl font-black text-gray-900 leading-none mt-1">{score}</p>
               </div>
               <button onClick={() => setShowInfoModal(true)} className="flex items-center gap-1.5 text-gray-400 hover:text-blue-500 font-bold transition-colors">
                 <Info size={20} />
@@ -360,7 +360,7 @@ export default function SignComboPage() {
           >
             {draggedIdx !== null && (
               <div className="absolute inset-0 rounded-xl flex items-center justify-center pointer-events-none z-10">
-                <span className="text-black text-3xl font-black tracking-widest">Remove Sign</span>
+                <span className="text-gray-900 text-3xl font-black tracking-widest">Remove Sign</span>
               </div>
             )}
             <div className={`transition-opacity duration-150 ${draggedIdx !== null ? 'opacity-[0.06]' : 'opacity-100'}`}>

@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { X, CheckCircle2, XCircle, Zap, ArrowUp, Minus, Lightbulb } from "lucide-react";
+import { X, CheckCircle2, XCircle, Zap, Lightbulb } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { getAllVocab, getLessonVocab, getLessonSentences, selectPracticeItems, getLeitnerBox } from "@/data/lessons/practiceVocab";
-import type { VocabItem, SentenceItem } from "@/data/lessons/lessonConfigs";
+import { getAllVocab, getLessonVocab, selectPracticeItems, getLeitnerBox } from "@/data/lessons/practiceVocab";
+import type { VocabItem } from "@/data/lessons/lessonConfigs";
 import type { LessonStep } from "@/data/lessons/alphabet";
 import Link from "next/link";
 
@@ -49,6 +49,26 @@ function makeAccepted(label: string): string[] {
   const parts = upper.split("/").map(p => p.trim()).filter(Boolean);
   if (parts.length <= 1) return [upper];
   return [...new Set([...parts, upper, upper.replace(/ \/ /g, "/"), upper.replace(/ \/ /g, " ")])];
+}
+
+// Derive filler words between signs from the first accepted answer.
+// Returns an array of length signs.length+1: fillersBefore[i] is the
+// filler text that appears before sign[i] (index signs.length = after last sign).
+function deriveFillers(signs: { label: string }[], acceptedAnswer: string): string[][] {
+  const words    = acceptedAnswer.toUpperCase().split(/\s+/);
+  const signSeqs = signs.map(s => s.label.toUpperCase().split(/\s+/));
+  const fillers: string[][] = Array.from({ length: signs.length + 1 }, () => []);
+  let wi = 0, si = 0;
+  while (si < signSeqs.length && wi < words.length) {
+    const seq = signSeqs[si];
+    if (words.slice(wi, wi + seq.length).join(" ") === seq.join(" ")) {
+      wi += seq.length; si++;
+    } else {
+      fillers[si].push(words[wi++]);
+    }
+  }
+  while (wi < words.length) fillers[signs.length].push(words[wi++]);
+  return fillers;
 }
 
 const TYPE_PROMPTS_GENERIC = ["What sign is this? Type it:", "Name this sign:", "Type the word shown:"];
@@ -193,8 +213,9 @@ function SignPracticeInner() {
   const [queue, setQueue]                   = useState<LessonStep[]>([]);
   const [totalQuestions, setTotalQuestions] = useState(0);
   const [currentIndex, setCurrentIndex]     = useState(0);
-  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
-  const [textInput, setTextInput]           = useState("");
+  const [selectedAnswer, setSelectedAnswer]   = useState<string | null>(null);
+  const [textInput, setTextInput]             = useState("");
+  const [sentenceInputs, setSentenceInputs]   = useState<string[]>([]);
   const [feedback, setFeedback]             = useState<"correct" | "incorrect" | null>(null);
   const [correctCount, setCorrectCount]     = useState(0);
   const [wrongPhase, setWrongPhase]         = useState<"none" | "hint" | "retry">("none");
@@ -266,25 +287,8 @@ function SignPracticeInner() {
       const selected       = selectPracticeItems(pool, progressMap);
       const vocabSteps     = generatePracticeSteps(selected, distractorPool);
 
-      // Sentences only from completed lessons (or specific lesson)
-      const sentencePool = lessonId
-        ? getLessonSentences(lessonId)
-        : completedLessonIds.flatMap(id => getLessonSentences(id));
-      const sentenceSteps = shuffle(sentencePool).slice(0, Math.min(3, sentencePool.length)).map(makeSentencePracticeStep);
-
-      // Interleave sentences every ~4 vocab questions
-      const combined: LessonStep[] = [];
-      let si = 0;
-      vocabSteps.forEach((step, i) => {
-        combined.push(step);
-        if (sentenceSteps.length > 0 && (i + 1) % 4 === 0 && si < sentenceSteps.length) {
-          combined.push(sentenceSteps[si++]);
-        }
-      });
-      while (si < sentenceSteps.length) combined.push(sentenceSteps[si++]);
-
-      setQueue(combined);
-      setTotalQuestions(combined.length);
+      setQueue(vocabSteps);
+      setTotalQuestions(vocabSteps.length);
       setLoading(false);
     }
     init();
@@ -297,7 +301,11 @@ function SignPracticeInner() {
       const step = queue[currentIndex];
       if (!step) return;
       if (feedback) handleNext();
-      else if (wrongPhase !== "hint" && (selectedAnswer || textInput.trim().length > 0)) handleCheck();
+      else if (wrongPhase !== "hint" && (
+        selectedAnswer ||
+        textInput.trim().length > 0 ||
+        (step.type === "sentence" && sentenceInputs.some(s => s.trim().length > 0))
+      )) handleCheck();
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
@@ -348,11 +356,21 @@ function SignPracticeInner() {
 
   const handleCheck = () => {
     const step = queue[currentIndex];
-    const answer = (step.type === "type" || step.type === "sentence") ? textInput.trim().toUpperCase() : selectedAnswer;
-    const accepted = step.acceptedAnswers?.length
-      ? step.acceptedAnswers.map(a => a.toUpperCase())
-      : [step.correctAnswer?.toUpperCase() ?? ""];
-    const isCorrect = accepted.includes(answer?.toUpperCase() ?? "");
+
+    // Sentence: check each bubble against its sign label
+    let isCorrect: boolean;
+    if (step.type === "sentence" && step.sentenceMedia) {
+      isCorrect = step.sentenceMedia.every((m, i) => {
+        const input = (sentenceInputs[i] ?? "").trim().toUpperCase();
+        return makeAccepted(m.label).includes(input);
+      });
+    } else {
+      const answer = step.type === "type" ? textInput.trim().toUpperCase() : selectedAnswer;
+      const accepted = step.acceptedAnswers?.length
+        ? step.acceptedAnswers.map(a => a.toUpperCase())
+        : [step.correctAnswer?.toUpperCase() ?? ""];
+      isCorrect = accepted.includes(answer?.toUpperCase() ?? "");
+    }
 
     if (wrongPhase === "retry" && !isCorrect) {
       handleReveal();
@@ -392,6 +410,7 @@ function SignPracticeInner() {
   const handleRetry = () => {
     setSelectedAnswer(null);
     setTextInput("");
+    setSentenceInputs([]);
     setWrongPhase("retry");
   };
 
@@ -399,6 +418,7 @@ function SignPracticeInner() {
     setFeedback(null);
     setSelectedAnswer(null);
     setTextInput("");
+    setSentenceInputs([]);
     setWrongPhase("none");
     setRetryHint(null);
     if (currentIndex < queue.length - 1) {
@@ -488,52 +508,6 @@ function SignPracticeInner() {
               <div className="text-xs font-bold text-slate-500 uppercase tracking-wide">Perfect</div>
             </div>
           </div>
-
-          {/* Per-sign mastery breakdown */}
-          {results.length > 0 && (
-            <div className="mb-8">
-              <h2 className="text-sm font-bold text-slate-500 uppercase tracking-widest mb-3">Sign Breakdown</h2>
-              <div className="space-y-2">
-                {results.map(r => {
-                  const postCfg = BOX_CONFIG[r.postBox];
-                  const preCfg  = BOX_CONFIG[r.preBox];
-                  return (
-                    <div key={r.wordKey} className="flex items-center justify-between rounded-2xl border-2 border-slate-100 bg-slate-50 px-4 py-3">
-                      {/* Left: label + session score */}
-                      <div className="flex items-center gap-3">
-                        {r.improved ? (
-                          <ArrowUp className="h-4 w-4 text-green-500 shrink-0" />
-                        ) : (
-                          <Minus className="h-4 w-4 text-slate-300 shrink-0" />
-                        )}
-                        <div>
-                          <span className="font-bold text-slate-900 text-sm">{r.label}</span>
-                          <span className="ml-2 text-xs text-slate-400">{r.sessionCorrect}/{r.sessionAttempts}</span>
-                        </div>
-                      </div>
-                      {/* Right: mastery badge (with before→after if improved) */}
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        {r.improved && r.preBox !== r.postBox && (
-                          <>
-                            <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${preCfg.color} opacity-60`}>
-                              {preCfg.label}
-                            </span>
-                            <span className="text-xs text-slate-400">→</span>
-                          </>
-                        )}
-                        <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${postCfg.color}`}>
-                          {postCfg.label}
-                        </span>
-                        {r.sessionStreak && (
-                          <span className="text-amber-500 text-sm" title="Perfect session">★</span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
 
           {/* Actions */}
           <div className="flex flex-col sm:flex-row gap-3">
@@ -659,40 +633,76 @@ function SignPracticeInner() {
         )}
 
         {/* SENTENCE */}
-        {step.type === "sentence" && (
-          <div className="flex-1 flex flex-col items-center animate-in fade-in slide-in-from-bottom-4 min-h-0 gap-4">
-            <div className="flex gap-2 flex-wrap justify-center shrink-0 overflow-x-auto w-full">
-              {step.sentenceMedia?.map((m, i) => (
-                <div key={i} className="flex flex-col items-center gap-1 shrink-0">
-                  {m.mediaType === "video" ? (
-                    <video key={m.src} src={m.src} autoPlay loop muted playsInline
-                      className="h-24 w-24 rounded-xl object-cover bg-slate-900" />
-                  ) : (
-                    <div className="h-24 w-24 rounded-xl bg-slate-50 border border-slate-200 p-1">
-                      <img src={m.src} alt={m.label} className="h-full w-full object-contain mix-blend-multiply" />
+        {step.type === "sentence" && step.sentenceMedia && (() => {
+          const fillers = deriveFillers(step.sentenceMedia, step.acceptedAnswers?.[0] ?? step.correctAnswer ?? "");
+          const disabled = feedback !== null || wrongPhase === "hint";
+          return (
+            <div className="flex-1 flex flex-col justify-center animate-in fade-in slide-in-from-bottom-4 min-h-0 gap-5">
+              {/* Signs row */}
+              <div className="flex items-end justify-center gap-3 flex-wrap shrink-0">
+                {step.sentenceMedia.map((m, i) => (
+                  <div key={i} className="flex flex-col items-center gap-2 shrink-0">
+                    {m.mediaType === "video" ? (
+                      <video key={m.src} src={m.src} autoPlay loop muted playsInline
+                        className="h-28 w-28 rounded-xl object-cover bg-slate-900" />
+                    ) : (
+                      <div className="h-28 w-28 rounded-xl bg-slate-50 border border-slate-200 p-1">
+                        <img src={m.src} alt={m.label} className="h-full w-full object-contain mix-blend-multiply" />
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Input bubbles row with filler words between */}
+              <div className="flex items-center justify-center gap-2 flex-wrap shrink-0">
+                {step.sentenceMedia.map((m, i) => {
+                  const fillerBefore = fillers[i];
+                  const val = sentenceInputs[i] ?? "";
+                  const accepted = makeAccepted(m.label);
+                  const inputCorrect = feedback && accepted.includes(val.trim().toUpperCase());
+                  const inputWrong   = feedback === "incorrect" && !inputCorrect;
+                  return (
+                    <div key={i} className="flex items-center gap-2">
+                      {fillerBefore.length > 0 && (
+                        <span className="text-slate-400 font-semibold text-sm">{fillerBefore.join(" ")}</span>
+                      )}
+                      <input
+                        autoFocus={i === 0}
+                        type="text"
+                        value={val}
+                        onChange={e => {
+                          const next = [...sentenceInputs];
+                          next[i] = e.target.value;
+                          setSentenceInputs(next);
+                        }}
+                        disabled={disabled}
+                        placeholder="..."
+                        className={`w-28 rounded-xl border-2 px-2 py-2 text-center text-sm font-bold uppercase tracking-wide outline-none transition-colors placeholder:text-slate-300 placeholder:normal-case placeholder:font-normal ${
+                          inputCorrect  ? "border-green-500 bg-green-50 text-green-700" :
+                          inputWrong    ? "border-red-500 bg-red-50 text-red-600" :
+                          wrongPhase === "hint" ? "border-yellow-300 bg-yellow-50 text-slate-700" :
+                          "border-slate-200 focus:border-blue-500 text-slate-900"
+                        }`}
+                      />
                     </div>
-                  )}
-                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wide">{m.label}</span>
-                </div>
-              ))}
+                  );
+                })}
+                {fillers[step.sentenceMedia.length].length > 0 && (
+                  <span className="text-slate-400 font-semibold text-sm">
+                    {fillers[step.sentenceMedia.length].join(" ")}
+                  </span>
+                )}
+              </div>
+
+              {feedback === "incorrect" && (
+                <p className="text-sm text-slate-500 text-center shrink-0">
+                  Correct: {step.sentenceMedia.map(m => m.label).join(" · ")}
+                </p>
+              )}
             </div>
-            <input autoFocus type="text" value={textInput} onChange={e => setTextInput(e.target.value)}
-              disabled={feedback !== null || wrongPhase === "hint"}
-              placeholder="Type the English sentence..."
-              className={`w-full shrink-0 rounded-2xl border-2 p-4 text-center text-xl font-bold uppercase tracking-wider outline-none transition-colors placeholder:text-slate-300 ${
-                feedback === "incorrect" ? "border-red-500 bg-red-50 text-red-700"     :
-                feedback === "correct"   ? "border-green-500 bg-green-50 text-green-700" :
-                wrongPhase === "hint"    ? "border-yellow-300 bg-yellow-50 text-slate-700" :
-                "border-slate-200 focus:border-blue-500 text-slate-900"
-              }`}
-            />
-            {feedback === "incorrect" && step.acceptedAnswers && (
-              <p className="text-sm text-slate-500 shrink-0">
-                Also accepted: {step.acceptedAnswers.slice(0, 2).join(" / ")}
-              </p>
-            )}
-          </div>
-        )}
+          );
+        })()}
       </main>
 
       {/* Footer */}
@@ -731,7 +741,7 @@ function SignPracticeInner() {
               </>
             ) : (
               <button onClick={feedback ? handleNext : handleCheck}
-                disabled={!feedback && !selectedAnswer && textInput.trim().length === 0}
+                disabled={!feedback && !selectedAnswer && textInput.trim().length === 0 && sentenceInputs.every(s => !s.trim())}
                 className={`min-w-32 ml-auto rounded-2xl px-8 py-3 text-lg font-bold text-white transition-transform active:scale-95 disabled:opacity-50 disabled:active:scale-100 ${
                   feedback === "correct"   ? "bg-green-500 hover:bg-green-600" :
                   feedback === "incorrect" ? "bg-red-500 hover:bg-red-600"     : "bg-blue-500 hover:bg-blue-600"
