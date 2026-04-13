@@ -197,10 +197,10 @@ export default function ProfileSettingsPage() {
 
         <h1 className="text-2xl font-bold text-gray-900 mb-4">Profile Settings</h1>
 
-        <div className="grid md:grid-cols-2 gap-5">
+        <div className="grid md:grid-cols-2 gap-5 items-start">
 
           {/* ── Profile section ── */}
-          <div className="bg-white border-2 border-gray-200 rounded-2xl p-6 flex flex-col">
+          <div className="bg-white border-2 border-gray-200 rounded-2xl p-6">
             <h2 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-5">Profile</h2>
 
             {/* Avatar */}
@@ -250,7 +250,7 @@ export default function ProfileSettingsPage() {
             </div>
 
             {/* Save */}
-            <div className="mt-auto">
+            <div>
               {saveMessage && (
                 <p className={`mb-3 text-sm font-medium px-4 py-3 rounded-xl ${
                   saveMessage.type === "success" ? "bg-green-50 text-green-600" : "bg-red-50 text-red-600"

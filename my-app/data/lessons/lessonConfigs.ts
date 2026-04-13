@@ -21,7 +21,7 @@ export interface SentenceSign {
 export interface SentenceItem {
   id: string;
   signs: SentenceSign[];
-  acceptedAnswers: string[];  // UPPERCASE — all valid English translations
+  answer: string;
   prompt?: string;
 }
 
@@ -155,7 +155,7 @@ export const lessonConfigs: Record<string, LessonConfig> = {
           { src: "/asl_videos/verbs/meet.mp4",         mediaType: "video", label: "MEET" },
           { src: "/asl_videos/pronouns/you.mp4",       mediaType: "video", label: "YOU" },
         ],
-        acceptedAnswers: ["HELLO NICE TO MEET YOU", "HELLO NICE MEET YOU", "HI NICE TO MEET YOU"],
+        answer: "Hello, nice to meet you!",
         prompt: "What does this greeting say?",
       },
       {
@@ -165,7 +165,7 @@ export const lessonConfigs: Record<string, LessonConfig> = {
           { src: "/asl_videos/daily_life/name.mp4",    mediaType: "video", label: "NAME" },
           { src: "/asl_videos/pronouns/you.mp4",       mediaType: "video", label: "YOU" },
         ],
-        acceptedAnswers: ["WHAT IS YOUR NAME", "HOW YOUR NAME", "YOUR NAME", "WHAT YOUR NAME"],
+        answer: "What is your name?",
         prompt: "What question is being asked?",
       },
       {
@@ -176,7 +176,7 @@ export const lessonConfigs: Record<string, LessonConfig> = {
           { src: "/asl_videos/adjectives/nice.mp4",    mediaType: "video", label: "NICE" },
           { src: "/asl_videos/verbs/meet.mp4",         mediaType: "video", label: "MEET" },
         ],
-        acceptedAnswers: ["MY NAME NICE TO MEET", "MY NAME NICE MEET", "MY NAME AND NICE TO MEET YOU"],
+        answer: "My name, nice to meet you!",
         prompt: "Translate this sentence:",
       },
     ],
@@ -204,7 +204,7 @@ export const lessonConfigs: Record<string, LessonConfig> = {
           { src: "/asl_videos/greetings/thank_you.mp4", mediaType: "video", label: "THANK YOU" },
           { src: "/asl_videos/greetings/please.mp4",    mediaType: "video", label: "PLEASE" },
         ],
-        acceptedAnswers: ["THANK YOU PLEASE", "PLEASE AND THANK YOU", "THANK YOU AND PLEASE"],
+        answer: "Thank you, please!",
         prompt: "What polite phrase is this?",
       },
       {
@@ -214,7 +214,7 @@ export const lessonConfigs: Record<string, LessonConfig> = {
           { src: "/asl_videos/adjectives/good.mp4",     mediaType: "video", label: "GOOD" },
           { src: "/asl_videos/greetings/please.mp4",    mediaType: "video", label: "PLEASE" },
         ],
-        acceptedAnswers: ["SORRY PLEASE BE GOOD", "SORRY GOOD PLEASE", "I AM SORRY PLEASE"],
+        answer: "I'm sorry, please.",
         prompt: "Translate this sentence:",
       },
       {
@@ -224,7 +224,7 @@ export const lessonConfigs: Record<string, LessonConfig> = {
           { src: "/asl_videos/adjectives/fine.mp4",     mediaType: "video", label: "FINE" },
           { src: "/asl_videos/greetings/thank_you.mp4", mediaType: "video", label: "THANK YOU" },
         ],
-        acceptedAnswers: ["GOOD AND FINE THANK YOU", "GOOD FINE THANK YOU", "I AM GOOD AND FINE THANK YOU"],
+        answer: "I'm good and fine, thank you!",
         prompt: "What does this say?",
       },
     ],
@@ -253,7 +253,7 @@ export const lessonConfigs: Record<string, LessonConfig> = {
           { src: "/asl_videos/daily_life/me.mp4",      mediaType: "video", label: "ME" },
           { src: "/asl_videos/greetings/please.mp4",   mediaType: "video", label: "PLEASE" },
         ],
-        acceptedAnswers: ["HELP ME PLEASE", "PLEASE HELP ME", "I NEED HELP PLEASE"],
+        answer: "Help me, please!",
         prompt: "What is this person asking for?",
       },
       {
@@ -263,7 +263,7 @@ export const lessonConfigs: Record<string, LessonConfig> = {
           { src: "/asl_videos/greetings/please.mp4",   mediaType: "video", label: "PLEASE" },
           { src: "/asl_videos/adjectives/again.mp4",   mediaType: "video", label: "AGAIN" },
         ],
-        acceptedAnswers: ["SLOW DOWN PLEASE AGAIN", "PLEASE SLOW DOWN AND REPEAT", "SLOW PLEASE AGAIN", "GO SLOWER PLEASE AGAIN"],
+        answer: "Please slow down and sign again.",
         prompt: "What are they asking you to do?",
       },
       {
@@ -272,7 +272,7 @@ export const lessonConfigs: Record<string, LessonConfig> = {
           { src: "/asl_videos/pronouns/you.mp4",       mediaType: "video", label: "YOU" },
           { src: "/asl_videos/verbs/understand.mp4",   mediaType: "video", label: "UNDERSTAND" },
         ],
-        acceptedAnswers: ["DO YOU UNDERSTAND", "YOU UNDERSTAND", "DO YOU UNDERSTAND ME"],
+        answer: "Do you understand?",
         prompt: "What question is being asked?",
       },
     ],
@@ -304,7 +304,7 @@ export const lessonConfigs: Record<string, LessonConfig> = {
           { src: "/asl_videos/relationships/father.mp4",  mediaType: "video", label: "FATHER" },
           { src: "/asl_videos/daily_life/home.mp4",       mediaType: "video", label: "HOME" },
         ],
-        acceptedAnswers: ["MOTHER FATHER HOME", "MOM AND DAD ARE HOME", "MOTHER AND FATHER AT HOME", "MY PARENTS ARE HOME"],
+        answer: "Mother and father are home.",
         prompt: "What does this sentence say?",
       },
       {
@@ -314,7 +314,7 @@ export const lessonConfigs: Record<string, LessonConfig> = {
           { src: "/asl_videos/relationships/sister.mp4",  mediaType: "video", label: "SISTER" },
           { src: "/asl_videos/daily_life/school.mp4",     mediaType: "video", label: "SCHOOL" },
         ],
-        acceptedAnswers: ["BROTHER SISTER SCHOOL", "MY BROTHER AND SISTER GO TO SCHOOL", "BROTHER AND SISTER AT SCHOOL"],
+        answer: "Brother and sister are at school.",
         prompt: "Translate this sentence:",
       },
       {
@@ -325,7 +325,7 @@ export const lessonConfigs: Record<string, LessonConfig> = {
           { src: "/asl_videos/relationships/grandfather.mp4",  mediaType: "video", label: "GRANDFATHER" },
           { src: "/asl_videos/verbs/meet.mp4",                 mediaType: "video", label: "MEET" },
         ],
-        acceptedAnswers: ["I MEET MY GRANDMOTHER AND GRANDFATHER", "ME GRANDMOTHER GRANDFATHER MEET", "I AM MEETING MY GRANDPARENTS"],
+        answer: "I am meeting my grandmother and grandfather.",
         prompt: "What is happening in this sentence?",
       },
     ],
@@ -354,7 +354,7 @@ export const lessonConfigs: Record<string, LessonConfig> = {
           { src: "/asl_videos/verbs/eat.mp4",            mediaType: "video", label: "EAT" },
           { src: "/asl_videos/daily_life/apple.mp4",     mediaType: "video", label: "APPLE" },
         ],
-        acceptedAnswers: ["I EAT AN APPLE", "ME EAT APPLE", "I AM EATING AN APPLE", "I EAT APPLE"],
+        answer: "I eat an apple.",
         prompt: "What are they eating?",
       },
       {
@@ -364,7 +364,7 @@ export const lessonConfigs: Record<string, LessonConfig> = {
           { src: "/asl_videos/daily_life/bread.mp4",     mediaType: "video", label: "BREAD" },
           { src: "/asl_videos/daily_life/cheese.mp4",    mediaType: "video", label: "CHEESE" },
         ],
-        acceptedAnswers: ["EAT BREAD AND CHEESE", "I EAT BREAD AND CHEESE", "EAT BREAD CHEESE"],
+        answer: "I eat bread and cheese.",
         prompt: "What food is being described?",
       },
       {
@@ -374,7 +374,7 @@ export const lessonConfigs: Record<string, LessonConfig> = {
           { src: "/asl_videos/verbs/eat.mp4",            mediaType: "video", label: "EAT" },
           { src: "/asl_videos/daily_life/fruit.mp4",     mediaType: "video", label: "FRUIT" },
         ],
-        acceptedAnswers: ["DO YOU EAT FRUIT", "YOU EAT FRUIT", "DO YOU LIKE FRUIT"],
+        answer: "Do you eat fruit?",
         prompt: "What question is being asked?",
       },
     ],
@@ -404,7 +404,7 @@ export const lessonConfigs: Record<string, LessonConfig> = {
           { src: "/asl_videos/daily_life/water.mp4",    mediaType: "video", label: "WATER" },
           { src: "/asl_videos/greetings/please.mp4",    mediaType: "video", label: "PLEASE" },
         ],
-        acceptedAnswers: ["I DRINK WATER PLEASE", "WATER PLEASE", "I WANT WATER PLEASE", "ME DRINK WATER PLEASE"],
+        answer: "I drink water, please.",
         prompt: "What is being requested?",
       },
       {
@@ -414,7 +414,7 @@ export const lessonConfigs: Record<string, LessonConfig> = {
           { src: "/asl_videos/verbs/drink.mp4",         mediaType: "video", label: "DRINK" },
           { src: "/asl_videos/daily_life/coffee.mp4",   mediaType: "video", label: "COFFEE" },
         ],
-        acceptedAnswers: ["DO YOU DRINK COFFEE", "YOU DRINK COFFEE", "DO YOU LIKE COFFEE"],
+        answer: "Do you drink coffee?",
         prompt: "What question is being asked?",
       },
       {
@@ -424,7 +424,7 @@ export const lessonConfigs: Record<string, LessonConfig> = {
           { src: "/asl_videos/daily_life/tea.mp4",      mediaType: "video", label: "TEA" },
           { src: "/asl_videos/daily_life/juice.mp4",    mediaType: "video", label: "JUICE" },
         ],
-        acceptedAnswers: ["MILK TEA AND JUICE", "MILK TEA JUICE", "MILK AND TEA AND JUICE"],
+        answer: "Milk, tea, and juice.",
         prompt: "Name these three drinks:",
       },
     ],
@@ -446,6 +446,107 @@ export const lessonConfigs: Record<string, LessonConfig> = {
       { key: "sign_orange", label: "ORANGE", mediaType: "video", mediaSrc: "/asl_videos/colors/orange.mp4", description: "C-hand in front of the face squeezes open and shut, like squeezing an orange." },
       { key: "sign_black",  label: "BLACK",  mediaType: "video", mediaSrc: "/asl_videos/colors/black.mp4",  description: "Index finger slides across your forehead from one side to the other." },
       { key: "sign_white",  label: "WHITE",  mediaType: "video", mediaSrc: "/asl_videos/colors/white.mp4",  description: "5-hand on chest pulls away, fingers closing into a flat O." },
+    ],
+  },
+
+  "vocab-routines": {
+    id: "vocab-routines",
+    title: "Daily Activities",
+    level: 3,
+    levelTitle: "Everyday Vocab",
+    duration: "10 min",
+    tags: ["Actions", "Verbs", "Daily Life"],
+    vocab: [
+      { key: "sign_sleep", label: "SLEEP",  mediaType: "video", mediaSrc: "/asl_videos/verbs/sleep.mp4", description: "Both hands together at the side of your face, tilt your head toward them like resting on a pillow.", parameters: { handshape: "Flat-O (both)", location: "Cheek/Temple", movement: "Tilt head toward hands as fingers close" } },
+      { key: "sign_learn", label: "LEARN",  mediaType: "video", mediaSrc: "/asl_videos/verbs/learn.mp4", description: "Dominant hand scoops upward from the non-dominant palm and brings it to the forehead, as if picking up knowledge.", parameters: { handshape: "Flat-O → Flat hand", location: "Non-dominant palm → Forehead", movement: "Scoop up to forehead" } },
+      { key: "sign_see",   label: "SEE",    mediaType: "video", mediaSrc: "/asl_videos/verbs/see.mp4",   description: "V-hand (two fingers) points from your eyes outward in the direction you're looking.", parameters: { handshape: "V-hand", location: "Eyes", movement: "Extend outward from eyes" } },
+      { key: "sign_like",  label: "LIKE",   mediaType: "video", mediaSrc: "/asl_videos/verbs/like.mp4",  description: "Place your middle finger and thumb on your chest, then pull them away — as if pulling affection from your heart.", parameters: { handshape: "Open-5 → 8-hand", location: "Chest", movement: "Pull away closing to pinch" } },
+      { key: "sign_want",  label: "WANT",   mediaType: "video", mediaSrc: "/asl_videos/verbs/want.mp4",  description: "Both claw hands face up in front of you, then draw them inward toward your body, as if pulling something you desire.", parameters: { handshape: "Claw-5 (both hands)", location: "Neutral space", movement: "Draw toward body" } },
+      { key: "sign_come",  label: "COME",   mediaType: "video", mediaSrc: "/asl_videos/verbs/come.mp4",  description: "Both index fingers point up, then arc inward toward your body, as if beckoning someone to come toward you.", parameters: { handshape: "1-hand (both)", location: "Neutral space", movement: "Arc inward toward body" } },
+    ],
+    sentences: [
+      {
+        id: "s-routines-1",
+        signs: [
+          { src: "/asl_videos/daily_life/me.mp4",    mediaType: "video", label: "ME" },
+          { src: "/asl_videos/verbs/like.mp4",        mediaType: "video", label: "LIKE" },
+          { src: "/asl_videos/verbs/sleep.mp4",       mediaType: "video", label: "SLEEP" },
+        ],
+        answer: "I like to sleep.",
+        prompt: "Translate this sentence:",
+      },
+      {
+        id: "s-routines-2",
+        signs: [
+          { src: "/asl_videos/pronouns/you.mp4",     mediaType: "video", label: "YOU" },
+          { src: "/asl_videos/verbs/come.mp4",        mediaType: "video", label: "COME" },
+          { src: "/asl_videos/verbs/see.mp4",         mediaType: "video", label: "SEE" },
+          { src: "/asl_videos/daily_life/me.mp4",    mediaType: "video", label: "ME" },
+        ],
+        answer: "Come and see me.",
+        prompt: "What are they saying?",
+      },
+      {
+        id: "s-routines-3",
+        signs: [
+          { src: "/asl_videos/daily_life/me.mp4",    mediaType: "video", label: "ME" },
+          { src: "/asl_videos/verbs/want.mp4",        mediaType: "video", label: "WANT" },
+          { src: "/asl_videos/verbs/learn.mp4",       mediaType: "video", label: "LEARN" },
+        ],
+        answer: "I want to learn.",
+        prompt: "What does this person want?",
+      },
+    ],
+  },
+
+  "vocab-places": {
+    id: "vocab-places",
+    title: "Places",
+    level: 3,
+    levelTitle: "Everyday Vocab",
+    duration: "10 min",
+    tags: ["Places", "Locations", "Daily Life"],
+    vocab: [
+      { key: "sign_restaurant", label: "RESTAURANT", mediaType: "video", mediaSrc: "/asl_videos/daily_life/restaurant.mp4", description: "R-hand (index and middle fingers crossed) taps both corners of your mouth in sequence.", parameters: { handshape: "R-hand", location: "Mouth corners", movement: "Tap left and right corners" } },
+      { key: "sign_gym",        label: "GYM",         mediaType: "video", mediaSrc: "/asl_videos/daily_life/gym.mp4",        description: "Both fists pump up and down alternately, like lifting weights.", parameters: { handshape: "S-hand (fists)", location: "Neutral space", movement: "Alternating upward pump" } },
+      { key: "sign_home",       label: "HOME",        mediaType: "video", mediaSrc: "/asl_videos/daily_life/home.mp4",       description: "Flat-O hand taps your cheek near the mouth (eating), then taps your cheek near the ear (sleeping) — home is where you eat and sleep.", parameters: { handshape: "Flat-O", location: "Cheek (mouth) → Cheek (ear)", movement: "Double tap" } },
+      { key: "sign_school",     label: "SCHOOL",      mediaType: "video", mediaSrc: "/asl_videos/daily_life/school.mp4",     description: "Clap your non-dominant open palm twice with your dominant open hand, like a teacher getting the class's attention.", parameters: { handshape: "Open-B (both)", location: "Neutral space", movement: "Double clap to palm" } },
+      { key: "sign_morning",    label: "MORNING",     mediaType: "video", mediaSrc: "/asl_videos/greetings/morning.mp4",     description: "Non-dominant arm is held horizontal (the horizon). Dominant open hand rises up from the elbow, like the sun rising.", parameters: { handshape: "Open-B", location: "Crook of non-dominant elbow", movement: "Rise upward" } },
+      { key: "sign_night",      label: "NIGHT",       mediaType: "video", mediaSrc: "/asl_videos/time/night.mp4",            description: "Non-dominant arm is horizontal (the horizon). Dominant bent hand arcs over it and downward, like the sun setting below the horizon.", parameters: { handshape: "Bent-B", location: "Over non-dominant arm", movement: "Arc downward over arm" } },
+    ],
+    sentences: [
+      {
+        id: "s-places-1",
+        signs: [
+          { src: "/asl_videos/daily_life/me.mp4",          mediaType: "video", label: "ME" },
+          { src: "/asl_videos/greetings/morning.mp4",       mediaType: "video", label: "MORNING" },
+          { src: "/asl_videos/daily_life/school.mp4",       mediaType: "video", label: "SCHOOL" },
+          { src: "/asl_videos/verbs/go.mp4",                mediaType: "video", label: "GO" },
+        ],
+        answer: "I go to school in the morning.",
+        prompt: "What is this person's morning routine?",
+      },
+      {
+        id: "s-places-2",
+        signs: [
+          { src: "/asl_videos/daily_life/me.mp4",          mediaType: "video", label: "ME" },
+          { src: "/asl_videos/time/night.mp4",              mediaType: "video", label: "NIGHT" },
+          { src: "/asl_videos/daily_life/restaurant.mp4",  mediaType: "video", label: "RESTAURANT" },
+          { src: "/asl_videos/verbs/go.mp4",                mediaType: "video", label: "GO" },
+        ],
+        answer: "I go to the restaurant at night.",
+        prompt: "Where are they going?",
+      },
+      {
+        id: "s-places-3",
+        signs: [
+          { src: "/asl_videos/pronouns/you.mp4",           mediaType: "video", label: "YOU" },
+          { src: "/asl_videos/daily_life/gym.mp4",          mediaType: "video", label: "GYM" },
+          { src: "/asl_videos/verbs/go.mp4",                mediaType: "video", label: "GO" },
+        ],
+        answer: "Do you go to the gym?",
+        prompt: "What question is being asked?",
+      },
     ],
   },
 
@@ -476,7 +577,7 @@ export const lessonConfigs: Record<string, LessonConfig> = {
           { src: "/asl_videos/pronouns/you.mp4",       mediaType: "video", label: "YOU" },
           { src: "/asl_videos/questions/where.mp4",    mediaType: "video", label: "WHERE" },
         ],
-        acceptedAnswers: ["WHERE IS YOUR HOME", "WHERE DO YOU LIVE", "YOUR HOME WHERE", "WHERE YOU LIVE"],
+        answer: "Where is your home?",
         prompt: "What question are they asking?",
       },
       {
@@ -486,7 +587,7 @@ export const lessonConfigs: Record<string, LessonConfig> = {
           { src: "/asl_videos/pronouns/you.mp4",       mediaType: "video", label: "YOU" },
           { src: "/asl_videos/questions/what.mp4",     mediaType: "video", label: "WHAT" },
         ],
-        acceptedAnswers: ["WHAT IS YOUR NAME", "YOUR NAME WHAT", "WHAT YOUR NAME"],
+        answer: "What is your name?",
         prompt: "Translate this question:",
       },
       {
@@ -496,7 +597,7 @@ export const lessonConfigs: Record<string, LessonConfig> = {
           { src: "/asl_videos/daily_life/home.mp4",    mediaType: "video", label: "HOME" },
           { src: "/asl_videos/questions/when.mp4",     mediaType: "video", label: "WHEN" },
         ],
-        acceptedAnswers: ["WHEN AM I GOING HOME", "WHEN DO I GO HOME", "ME HOME WHEN", "WHEN I GO HOME"],
+        answer: "When am I going home?",
         prompt: "What is this person asking?",
       },
     ],
@@ -526,7 +627,7 @@ export const lessonConfigs: Record<string, LessonConfig> = {
           { src: "/asl_videos/daily_life/school.mp4",  mediaType: "video", label: "SCHOOL" },
           { src: "/asl_videos/verbs/go.mp4",           mediaType: "video", label: "GO" },
         ],
-        acceptedAnswers: ["TODAY I GO TO SCHOOL", "TODAY I AM GOING TO SCHOOL", "TODAY ME SCHOOL GO", "I GO TO SCHOOL TODAY"],
+        answer: "Today I go to school.",
         prompt: "Translate this sentence:",
       },
       {
@@ -536,7 +637,7 @@ export const lessonConfigs: Record<string, LessonConfig> = {
           { src: "/asl_videos/daily_life/work.mp4",    mediaType: "video", label: "WORK" },
           { src: "/asl_videos/daily_life/me.mp4",      mediaType: "video", label: "ME" },
         ],
-        acceptedAnswers: ["TOMORROW I WORK", "I WORK TOMORROW", "TOMORROW ME WORK"],
+        answer: "Tomorrow I work.",
         prompt: "What is the plan?",
       },
       {
@@ -546,7 +647,7 @@ export const lessonConfigs: Record<string, LessonConfig> = {
           { src: "/asl_videos/daily_life/me.mp4",      mediaType: "video", label: "ME" },
           { src: "/asl_videos/daily_life/home.mp4",    mediaType: "video", label: "HOME" },
         ],
-        acceptedAnswers: ["YESTERDAY I WAS HOME", "I WAS HOME YESTERDAY", "YESTERDAY ME HOME"],
+        answer: "Yesterday I was home.",
         prompt: "What happened yesterday?",
       },
     ],
@@ -575,7 +676,7 @@ export const lessonConfigs: Record<string, LessonConfig> = {
           { src: "/asl_videos/verbs/go.mp4",           mediaType: "video", label: "GO" },
           { src: "/asl_videos/daily_life/home.mp4",    mediaType: "video", label: "HOME" },
         ],
-        acceptedAnswers: ["I GO HOME", "I AM GOING HOME", "ME GO HOME"],
+        answer: "I go home.",
         prompt: "Where is this person going?",
       },
       {
@@ -585,7 +686,7 @@ export const lessonConfigs: Record<string, LessonConfig> = {
           { src: "/asl_videos/verbs/come.mp4",         mediaType: "video", label: "COME" },
           { src: "/asl_videos/daily_life/school.mp4",  mediaType: "video", label: "SCHOOL" },
         ],
-        acceptedAnswers: ["YOU COME TO SCHOOL", "COME TO SCHOOL", "YOU COME SCHOOL", "DO YOU COME TO SCHOOL"],
+        answer: "You come to school.",
         prompt: "Translate this sentence:",
       },
       {
@@ -596,7 +697,7 @@ export const lessonConfigs: Record<string, LessonConfig> = {
           { src: "/asl_videos/daily_life/work.mp4",    mediaType: "video", label: "WORK" },
           { src: "/asl_videos/time/now.mp4",           mediaType: "video", label: "NOW" },
         ],
-        acceptedAnswers: ["I GO TO WORK NOW", "I AM GOING TO WORK NOW", "ME GO WORK NOW", "NOW I GO TO WORK"],
+        answer: "I go to work now.",
         prompt: "What are they doing right now?",
       },
     ],

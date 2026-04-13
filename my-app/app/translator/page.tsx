@@ -13,6 +13,7 @@ export default function TranslatorPage() {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastLetterRef = useRef<string | null>(null);
   const holdCountRef = useRef(0);
+  const committedRef = useRef(false);
   const requestInFlightRef = useRef(false);
   const HOLD_FRAMES = 15;
 
@@ -71,23 +72,25 @@ export default function TranslatorPage() {
 
       setLetter(data.letter ?? null);
       setConfidence(data.confidence ?? null);
-      setWord(data.word ?? "");
 
       if (data.letter) {
         if (data.letter === lastLetterRef.current) {
-          holdCountRef.current = Math.min(
-            holdCountRef.current + 1,
-            HOLD_FRAMES
-          );
+          holdCountRef.current = Math.min(holdCountRef.current + 1, HOLD_FRAMES);
+          // Commit letter to word once hold is complete (only once per hold)
+          if (holdCountRef.current === HOLD_FRAMES && !committedRef.current) {
+            committedRef.current = true;
+            setWord(prev => prev + data.letter);
+          }
         } else {
           holdCountRef.current = 1;
           lastLetterRef.current = data.letter;
+          committedRef.current = false;
         }
-
         setHoldProgress(holdCountRef.current / HOLD_FRAMES);
       } else {
         holdCountRef.current = 0;
         lastLetterRef.current = null;
+        committedRef.current = false;
         setHoldProgress(0);
       }
     } catch (err) {
@@ -158,38 +161,16 @@ export default function TranslatorPage() {
     setHoldProgress(0);
   };
 
-  const clearWord = async () => {
-    try {
-      await fetch(`${API_URL}/word`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "clear" }),
-      });
-
-      setWord("");
-      holdCountRef.current = 0;
-      lastLetterRef.current = null;
-      setHoldProgress(0);
-    } catch (err) {
-      console.error(err);
-    }
+  const clearWord = () => {
+    setWord("");
+    holdCountRef.current = 0;
+    lastLetterRef.current = null;
+    committedRef.current = false;
+    setHoldProgress(0);
   };
 
-  const backspaceWord = async () => {
-    try {
-      const res = await fetch(`${API_URL}/word`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "backspace" }),
-      });
-
-      if (!res.ok) return;
-
-      const data = await res.json();
-      setWord(data.word);
-    } catch (err) {
-      console.error(err);
-    }
+  const backspaceWord = () => {
+    setWord(prev => prev.slice(0, -1));
   };
 
   const stopCamera = () => {
@@ -274,7 +255,7 @@ export default function TranslatorPage() {
           </div>
         )}
 
-        <section className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <section className="grid grid-cols-1 gap-6 lg:grid-cols-2 items-start">
           <div className="rounded-2xl border-2 border-gray-200 bg-white p-6">
             <h2 className="mb-5 text-2xl font-bold text-gray-900">Sign Input</h2>
 
@@ -357,20 +338,6 @@ export default function TranslatorPage() {
               )}
             </div>
 
-            <div className="mt-4 flex gap-3">
-              <button
-                onClick={clearWord}
-                className="flex-1 rounded-xl border border-gray-200 bg-gray-100 px-4 py-3 font-semibold text-gray-700 hover:bg-gray-200"
-              >
-                Clear Word
-              </button>
-              <button
-                onClick={backspaceWord}
-                className="flex-1 rounded-xl border border-gray-200 bg-gray-100 px-4 py-3 font-semibold text-gray-700 hover:bg-gray-200"
-              >
-                Backspace
-              </button>
-            </div>
           </div>
 
           <div className="rounded-2xl border-2 border-gray-200 bg-white p-6">
@@ -391,6 +358,21 @@ export default function TranslatorPage() {
                   Translated text will appear here...
                 </p>
               )}
+            </div>
+
+            <div className="mt-4 flex gap-3">
+              <button
+                onClick={clearWord}
+                className="flex-1 rounded-xl border border-gray-200 bg-gray-100 px-4 py-3 font-semibold text-gray-700 hover:bg-gray-200"
+              >
+                Clear
+              </button>
+              <button
+                onClick={backspaceWord}
+                className="flex-1 rounded-xl border border-gray-200 bg-gray-100 px-4 py-3 font-semibold text-gray-700 hover:bg-gray-200"
+              >
+                Backspace
+              </button>
             </div>
           </div>
         </section>

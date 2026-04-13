@@ -8,6 +8,8 @@ import { getAllVocab, getLessonVocab, selectPracticeItems, getLeitnerBox } from 
 import type { VocabItem } from "@/data/lessons/lessonConfigs";
 import type { LessonStep } from "@/data/lessons/alphabet";
 import Link from "next/link";
+import { useProgress } from "@/components/ProgressProvider";
+import LockedScreen from "@/components/LockedScreen";
 
 // ── Leitner box display config ─────────────────────────────────────────────
 
@@ -772,6 +774,18 @@ function SignPracticeInner() {
 
 // Suspense wrapper required for useSearchParams
 export default function SignPracticePage() {
+  const { level1Complete, loaded } = useProgress();
+
+  if (!loaded) return <div className="min-h-screen bg-white" />;
+  if (!level1Complete) return (
+    <LockedScreen
+      title="Sign Practice"
+      navActive="Lessons"
+      requiresLevelName="Level 1 — The Basics"
+      lessons={["Alphabet A – M", "Alphabet N – Z", "Numbers 0 – 9", "Deixis – Pointing"]}
+    />
+  );
+
   return (
     <Suspense fallback={
       <div className="flex min-h-screen items-center justify-center bg-white">

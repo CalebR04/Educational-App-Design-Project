@@ -139,32 +139,56 @@ export default function LessonsPage() {
                   </div>
                 </Link>
               ) : (
-                <div className="bg-white border-2 border-gray-200 rounded-2xl p-6 opacity-50 cursor-not-allowed select-none">
+                <div className="bg-white border-2 border-blue-100 rounded-2xl p-6 opacity-60 cursor-not-allowed select-none">
                   <div className="flex items-start gap-4">
-                    <div className="w-16 h-16 bg-linear-to-br from-gray-300 to-gray-400 rounded-xl flex items-center justify-center shrink-0">
+                    <div className="w-16 h-16 bg-linear-to-br from-blue-300 to-blue-400 rounded-xl flex items-center justify-center shrink-0">
                       <Lock className="h-8 w-8 text-white" />
                     </div>
                     <div>
                       <h3 className="text-xl font-bold text-gray-900 mb-1">Sign Practice</h3>
-                      <p className="text-gray-500 text-sm">Complete all Level 1 lessons to unlock.</p>
+                      <div className="flex items-center gap-1.5 text-sm font-semibold text-gray-500 mt-1">
+                        <Lock className="h-3.5 w-3.5 shrink-0" />
+                        Complete Unit 1 in the Lessons Tab
+                      </div>
                     </div>
                   </div>
                 </div>
               );
             })()}
-            <Link href="/lessons/conversation" className="block">
-              <div className="bg-white border-2 border-gray-200 rounded-2xl p-6 hover:border-blue-500 hover:shadow-xl transition-all cursor-pointer">
-                <div className="flex items-start gap-4">
-                  <div className="w-16 h-16 bg-linear-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shrink-0">
-                    <MessageSquare className="h-8 w-8 text-white" />
+            {(() => {
+              const LEVEL_2_IDS = ["greetings-contact", "greetings-manners", "greetings-survival"];
+              const conversationUnlocked = mounted && LEVEL_2_IDS.every(id => lessons.find(l => l.id === id)?.everCompleted);
+              return conversationUnlocked ? (
+                <Link href="/lessons/conversation" className="block">
+                  <div className="bg-white border-2 border-gray-200 rounded-2xl p-6 hover:border-blue-500 hover:shadow-xl transition-all cursor-pointer">
+                    <div className="flex items-start gap-4">
+                      <div className="w-16 h-16 bg-linear-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shrink-0">
+                        <MessageSquare className="h-8 w-8 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold text-gray-900 mb-1">Conversation Practice</h3>
+                        <p className="text-gray-600 text-sm">Build fluency through interactive scenarios.</p>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-1">Conversation Practice</h3>
-                    <p className="text-gray-600 text-sm">Build fluency through interactive scenarios.</p>
+                </Link>
+              ) : (
+                <div className="bg-white border-2 border-purple-100 rounded-2xl p-6 opacity-60 cursor-not-allowed select-none">
+                  <div className="flex items-start gap-4">
+                    <div className="w-16 h-16 bg-linear-to-br from-purple-300 to-purple-400 rounded-xl flex items-center justify-center shrink-0">
+                      <Lock className="h-8 w-8 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-gray-900 mb-1">Conversation Practice</h3>
+                      <div className="flex items-center gap-1.5 text-sm font-semibold text-gray-500 mt-1">
+                        <Lock className="h-3.5 w-3.5 shrink-0" />
+                        Complete Unit 2 in the Lessons Tab
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </Link>
+              );
+            })()}
           </div>
         </div>
 
@@ -183,7 +207,7 @@ export default function LessonsPage() {
                     {meta.icon}
                   </div>
                   <div>
-                    <h2 className={`text-xl font-bold ${isLevelLocked ? "text-gray-400" : "text-gray-900"}`}>{meta.title}</h2>
+                    <h2 className={`text-xl font-bold ${isLevelLocked ? "text-gray-400" : "text-gray-900"}`}>Unit {level}: {meta.title}</h2>
                     <p className="text-sm text-gray-500">{meta.subtitle}</p>
                   </div>
                 </div>
@@ -192,7 +216,7 @@ export default function LessonsPage() {
                 {isLevelLocked && (
                   <p className="text-sm text-gray-500 mb-3 ml-1 flex items-center gap-1.5">
                     <Lock className="h-3.5 w-3.5 shrink-0" />
-                    Complete all <span className="font-semibold">{LEVEL_META[level - 1].title}</span> lessons to unlock these lessons.
+                    Complete Unit {level - 1} in the Lessons Tab to unlock.
                   </p>
                 )}
 
@@ -287,21 +311,22 @@ function LessonCard({ lesson, mounted, onReset }: { lesson: LessonWithStatus; mo
         </div>
       </div>
 
-      <h3 className="font-bold text-gray-900 mb-2">{lesson.title}</h3>
+      <h3 className="font-bold text-gray-900 mb-3">{lesson.title}</h3>
 
-      <div className="flex flex-wrap gap-2 mb-4">
-        {lesson.tags.map(tag => (
-          <span key={tag} className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded-full">{tag}</span>
-        ))}
-      </div>
-
-      {/* Progress bar — always rendered at fixed height; invisible when not applicable */}
-      <div className={showBar ? "mb-3" : "invisible mb-3"}>
-        <div className="flex justify-between mb-1 text-xs font-medium text-gray-700">
-          <span>Progress</span><span>{barPct}%</span>
+      {/* Description / Progress bar — fixed height slot so card never resizes */}
+      <div className="relative h-10 mb-3">
+        {/* Description — shown when lesson not yet started */}
+        <div className={`absolute inset-0 overflow-hidden ${showBar || !mounted ? "invisible" : ""}`}>
+          <p className="text-xs text-gray-500 line-clamp-3 leading-normal">{lesson.description}</p>
         </div>
-        <div className="w-full bg-gray-200 rounded-full h-2">
-          <div className="bg-blue-500 h-2 rounded-full transition-all" style={{ width: `${barPct}%` }} />
+        {/* Progress bar — shown when in progress or completed */}
+        <div className={`absolute inset-0 ${showBar ? "" : "invisible"}`}>
+          <div className="flex justify-between mb-1 text-xs font-medium text-gray-700">
+            <span>Progress</span><span>{barPct}%</span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-2">
+            <div className="bg-blue-500 h-2 rounded-full transition-all" style={{ width: `${barPct}%` }} />
+          </div>
         </div>
       </div>
 

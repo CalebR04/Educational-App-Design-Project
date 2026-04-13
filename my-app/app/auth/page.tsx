@@ -109,7 +109,7 @@ function AuthInner() {
         return;
       }
       setLoading(false);
-      router.push("/");
+      router.push("/home");
       router.refresh();
       return;
     }
@@ -134,7 +134,7 @@ function AuthInner() {
     }
 
     setLoading(false);
-    router.push("/");
+    router.push("/home");
     router.refresh();
   };
 
@@ -350,7 +350,7 @@ function AuthInner() {
                     .forEach(k => localStorage.removeItem(k));
                   await supabase.auth.signInAnonymously();
                   setShowGuestModal(false);
-                  router.push("/");
+                  router.push("/home");
                   router.refresh();
                 }}
                 className="w-full rounded-2xl bg-gray-900 py-3 font-bold text-white hover:bg-black transition"

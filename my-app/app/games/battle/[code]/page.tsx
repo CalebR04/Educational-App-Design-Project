@@ -66,7 +66,7 @@ export default function BattleRoom() {
   // Lobby
   const [lobbyId,       setLobbyId]       = useState<string | null>(null);
   const [hostId,        setHostId]        = useState<string | null>(null);
-  const [roundCount,    setRoundCount]    = useState(7);
+  const [roundCount,    setRoundCount]    = useState(5);
   const [lobbyError,    setLobbyError]    = useState<string | null>(null);
   const [copied,        setCopied]        = useState(false);
   const [showLobbyHelp,    setShowLobbyHelp]    = useState(false);
@@ -101,7 +101,7 @@ export default function BattleRoom() {
   const myUserIdRef        = useRef<string | null>(null);
   const hostIdRef          = useRef<string | null>(null);
   const isHostRef          = useRef(false);
-  const roundCountRef      = useRef(7);
+  const roundCountRef      = useRef(5);
   const phaseRef           = useRef<Phase>("loading");
   const roundStartedAtRef  = useRef(0);
 
@@ -396,8 +396,7 @@ export default function BattleRoom() {
         continue;
       }
       const correct    = sub.answer === round.signName;
-      const speedBonus = correct ? Math.round(Math.max(0, 50 * (1 - sub.reactionMs / ROUND_TIMEOUT_MS))) : 0;
-      const points     = correct ? 100 + speedBonus : 0;
+      const points = correct ? Math.max(1, Math.round(100 * (1 - sub.reactionMs / ROUND_TIMEOUT_MS))) : 0;
       results[p.userId] = { answer: sub.answer, reactionMs: sub.reactionMs, correct, points };
       if (correct && sub.reactionMs < fastestMs) { fastestMs = sub.reactionMs; winnerId = p.userId; }
       if (!correct) frozenUntil[p.userId] = Date.now() + FREEZE_MS;
@@ -572,7 +571,7 @@ export default function BattleRoom() {
               <div className="bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-2xl p-4">
                 <p className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">Rounds</p>
                 <div className="flex gap-2">
-                  {[5, 7, 10].map(n => (
+                  {[3, 5, 10].map(n => (
                     <button key={n}
                       onClick={() => isHost && updateRoundCount(n)}
                       disabled={!isHost}
@@ -698,13 +697,13 @@ export default function BattleRoom() {
         )}
 
         <main className="flex-1 max-w-lg mx-auto w-full px-4 py-3 flex flex-col gap-3 overflow-hidden">
-          {/* Video — compact */}
-          <div className="rounded-xl overflow-hidden bg-gray-900 shadow-md shrink-0" style={{ height: "38vh" }}>
+          {/* Video — tall, prioritise height */}
+          <div className="rounded-xl overflow-hidden bg-gray-900 shadow-md flex-1 min-h-0 flex items-center justify-center">
             <video
               key={currentRound.videoUrl}
               src={currentRound.videoUrl}
               autoPlay loop muted playsInline
-              className="w-full h-full object-cover"
+              className="h-full w-full object-contain"
             />
           </div>
 
@@ -716,8 +715,8 @@ export default function BattleRoom() {
             </div>
           )}
 
-          {/* 2×2 answer options */}
-          <div className="grid grid-cols-2 gap-2.5 flex-1">
+          {/* 2×2 answer options — fixed size, don't stretch */}
+          <div className="grid grid-cols-2 gap-2.5 shrink-0">
             {currentRound.options.map(opt => {
               const isSelected = myAnswer === opt;
               return (
@@ -725,7 +724,7 @@ export default function BattleRoom() {
                   key={opt}
                   onClick={() => submitAnswer(opt)}
                   disabled={!!myAnswer || myIsFrozen}
-                  className={`rounded-2xl font-bold text-base transition active:scale-95 border-2 ${
+                  className={`h-14 rounded-2xl font-bold text-base transition active:scale-95 border-2 ${
                     isSelected
                       ? "bg-blue-500 border-blue-500 text-white"
                       : myAnswer
@@ -739,20 +738,6 @@ export default function BattleRoom() {
                 </button>
               );
             })}
-          </div>
-
-          {/* Mini scoreboard */}
-          <div className="grid grid-cols-2 gap-2 shrink-0">
-            {sortedPlayers.map(p => (
-              <div key={p.userId} className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl border ${p.userId === myUserId ? "border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/20" : "border-gray-200 dark:border-gray-700"}`}>
-                <PlayerAvatar p={p} />
-                <div className="min-w-0 flex-1">
-                  <div className="text-xs font-semibold text-gray-900 dark:text-white truncate">{p.displayName}</div>
-                  <div className="text-xs text-gray-400">{scores[p.userId] ?? 0} pts</div>
-                </div>
-                {(frozen[p.userId] ?? 0) > Date.now() && <Snowflake className="w-3 h-3 text-blue-400 shrink-0" />}
-              </div>
-            ))}
           </div>
         </main>
 

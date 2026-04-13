@@ -1,8 +1,5 @@
 // --- TYPES ---
-export type StepType = "teach" | "quiz" | "match" | "synthesize" | "type" | "sentence" | "parameter_quiz";
-
-/** Which linguistic parameter is being tested in a parameter_quiz step */
-export type ParameterField = "handshape" | "location" | "movement";
+export type StepType = "teach" | "quiz" | "match" | "synthesize" | "type" | "sentence" | "missing_sign";
 
 export interface LessonStep {
   id: string;
@@ -17,8 +14,7 @@ export interface LessonStep {
   acceptedAnswers?: string[];
   wordKey?: string;
   sentenceMedia?: Array<{ src: string; mediaType: "image" | "video"; label: string }>;
-  /** Set on parameter_quiz steps — identifies which ASL parameter is being tested */
-  parameterField?: ParameterField;
+  missingIndex?: number;
 }
 
 export interface Lesson {

@@ -4,9 +4,11 @@ import Link from "next/link";
 import Navbar from "../../components/Navbar";
 import { useEffect, useState } from "react";
 import { fetchGameHighScores } from "@/lib/supabase/userStats";
+import { useProgress } from "@/components/ProgressProvider";
+import { Lock } from "lucide-react";
 
 export default function GamesPage() {
-  const activeTab = "Games";
+  const { level1Complete, level2Complete, level3Complete, loaded } = useProgress();
 
   const [memoryScore, setMemoryScore] = useState(0);
   const [memoryPlayed, setMemoryPlayed] = useState(0);
@@ -32,32 +34,35 @@ export default function GamesPage() {
     {
       title: "Sign Memory",
       description: "Match pairs of ASL signs to their memory card game",
-      difficulty: "Easy",
       plays: memoryPlayed,
       score: memoryScore,
       gradient: "from-blue-400 to-blue-600",
       icon: "⌘",
       link: "/games/memory",
-    },
-    {
-      title: "Sign Combos",
-      description: "Combine basic signs to create complete phrases and sentences",
-      difficulty: "Medium",
-      plays: combosPlayed,
-      score: combosScore,
-      gradient: "from-purple-400 to-purple-600",
-      icon: "⚡",
-      link: "/games/combos",
+      locked: loaded && !level1Complete,
+      lockText: "Complete Unit 1 in the Lessons Tab",
     },
     {
       title: "Sign Battle",
       description: "Challenge up to 3 friends in real-time ASL sign recognition",
-      difficulty: "Hard",
       plays: battlePlayed,
       score: battleScore,
       gradient: "from-orange-400 to-red-600",
       icon: "🏆",
       link: "/games/battle",
+      locked: loaded && !level2Complete,
+      lockText: "Complete Unit 2 in the Lessons Tab",
+    },
+    {
+      title: "Sign Combos",
+      description: "Combine basic signs to create complete phrases and sentences",
+      plays: combosPlayed,
+      score: combosScore,
+      gradient: "from-purple-400 to-purple-600",
+      icon: "⚡",
+      link: "/games/combos",
+      locked: loaded && !level3Complete,
+      lockText: "Complete Unit 3 in the Lessons Tab",
     },
   ];
 
@@ -89,6 +94,29 @@ export default function GamesPage() {
 
         <div className="grid md:grid-cols-3 gap-6">
           {games.map((game) => {
+            if (game.locked) {
+              return (
+                <div
+                  key={game.title}
+                  className="flex flex-col overflow-hidden rounded-2xl border-2 border-gray-200 bg-white opacity-50 cursor-not-allowed select-none"
+                >
+                  <div className={`flex-1 bg-linear-to-br ${game.gradient} p-6 text-white`}>
+                    <div className="text-3xl mb-3">
+                      <Lock className="w-8 h-8 text-white/80" />
+                    </div>
+                    <h2 className="text-xl font-bold mb-2">{game.title}</h2>
+                    <p className="text-white/90 text-sm mb-3">{game.description}</p>
+                  </div>
+                  <div className="p-4">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-gray-500">
+                      <Lock className="w-4 h-4 shrink-0" />
+                      <span>{game.lockText}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+
             return (
               <Link
                 key={game.title}
@@ -99,9 +127,6 @@ export default function GamesPage() {
                   <div className="text-3xl mb-3">{game.icon}</div>
                   <h2 className="text-xl font-bold mb-2">{game.title}</h2>
                   <p className="text-white/90 text-sm mb-3">{game.description}</p>
-                  <div className="inline-flex bg-white/20 backdrop-blur px-3 py-1 rounded-full text-sm font-semibold">
-                    {game.difficulty}
-                  </div>
                 </div>
 
                 <div className="p-4 grid grid-cols-2 gap-4">

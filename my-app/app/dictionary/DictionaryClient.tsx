@@ -241,13 +241,13 @@ export default function DictionaryClient({ allSigns }: { allSigns: SignData[] })
           onClick={() => setSelectedSign(null)}
         >
           <div
-            className="w-full max-w-2xl overflow-hidden rounded-3xl bg-white shadow-2xl animate-in zoom-in-95 duration-200"
+            className="w-full max-w-lg overflow-hidden rounded-3xl bg-white shadow-2xl animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col"
             onClick={e => e.stopPropagation()}
           >
             {/* Modal header */}
-            <div className="flex items-start justify-between border-b border-slate-100 p-6 sm:p-8">
+            <div className="flex items-start justify-between border-b border-slate-100 p-4 sm:p-5 shrink-0">
               <div>
-                <h3 className="text-3xl font-black text-slate-900">{selectedSign.name}</h3>
+                <h3 className="text-2xl font-black text-slate-900">{selectedSign.name}</h3>
                 <p className="mt-1 font-medium text-slate-500">{selectedSign.category}</p>
                 {(() => {
                   const pct = getUnderstanding(selectedSign);
@@ -274,18 +274,18 @@ export default function DictionaryClient({ allSigns }: { allSigns: SignData[] })
             </div>
 
             {/* Modal media */}
-            <div className="bg-slate-50 p-6 sm:p-8">
+            <div className="bg-slate-50 p-4 sm:p-5 flex-1 min-h-0 flex items-center justify-center">
               <div className={`relative flex w-full items-center justify-center overflow-hidden rounded-2xl shadow-inner ${
-                selectedSign.mediaType === "image" ? "aspect-video bg-white border border-slate-200" : "bg-slate-900"
-              }`}>
+                selectedSign.mediaType === "image" ? "bg-white border border-slate-200" : "bg-slate-900"
+              }`} style={{ maxHeight: "55vh" }}>
                 {selectedSign.mediaType === "image" ? (
-                  <img src={selectedSign.mediaSrc} alt={`Sign for ${selectedSign.name}`} className="h-full w-full object-contain p-4" />
+                  <img src={selectedSign.mediaSrc} alt={`Sign for ${selectedSign.name}`} className="max-h-[55vh] w-full object-contain p-4" />
                 ) : (
                   <video
                     key={selectedSign.mediaSrc}
                     src={selectedSign.mediaSrc}
                     autoPlay loop muted playsInline
-                    className="w-full h-full object-cover pointer-events-none"
+                    className="max-h-[55vh] w-full object-contain pointer-events-none"
                   />
                 )}
               </div>

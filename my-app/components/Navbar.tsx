@@ -89,7 +89,7 @@ export default function Navbar({ active }: NavbarProps) {
   };
 
   const tabs = [
-    { name: "Home",       href: "/" },
+    { name: "Home",       href: "/home" },
     { name: "Lessons",    href: "/lessons" },
     { name: "Dictionary", href: "/dictionary" },
     { name: "Games",      href: "/games" },
