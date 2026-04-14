@@ -50,7 +50,7 @@ export default function ProfilePage() {
     : null;
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white dark:bg-gray-900">
       <Navbar active="Profile" />
 
       <main className="max-w-7xl mx-auto px-4 py-8">
@@ -95,20 +95,20 @@ export default function ProfilePage() {
         <div className="grid md:grid-cols-3 gap-8">
           {/* Left: Badges */}
           <div className="md:col-span-2">
-            <div className="bg-white rounded-2xl border-2 border-gray-200 p-6">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl border-2 border-gray-200 dark:border-gray-700 p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
                   <Award className="w-5 h-5 text-yellow-500" />
                   Badges & Achievements
                 </h3>
-                <span className="text-sm text-gray-600">{unlockedCount} / {badges.length} unlocked</span>
+                <span className="text-sm text-gray-600 dark:text-gray-400">{unlockedCount} / {badges.length} unlocked</span>
               </div>
 
               {(["streak", "signs", "accuracy", "games", "highscore"] as const).map(category => {
                 const categoryBadges = badges.filter(b => b.category === category);
                 return (
                   <div key={category} className="mb-6 last:mb-0">
-                    <h4 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-3">
+                    <h4 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">
                       {CATEGORY_META[category].label}
                     </h4>
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
@@ -118,7 +118,7 @@ export default function ProfilePage() {
                           className={`relative rounded-xl p-4 text-center ${
                             badge.isUnlocked
                               ? `bg-linear-to-br ${badge.gradient} text-white`
-                              : "bg-gray-100 text-gray-400"
+                              : "bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500"
                           }`}
                         >
                           {!badge.isUnlocked && (
@@ -140,25 +140,25 @@ export default function ProfilePage() {
 
           {/* Right: Quick Stats */}
           <div className="space-y-6">
-            <div className="bg-white rounded-2xl border-2 border-gray-200 p-6">
-              <h3 className="font-bold text-gray-900 mb-4">Quick Stats</h3>
+            <div className="bg-white dark:bg-gray-800 rounded-2xl border-2 border-gray-200 dark:border-gray-700 p-6">
+              <h3 className="font-bold text-gray-900 dark:text-white mb-4">Quick Stats</h3>
               <div className="space-y-4">
                 {[
-                  { label: "Games Played",       value: stats?.gamesPlayed ?? 0,  bg: "bg-purple-50", iconBg: "bg-purple-500", icon: <Trophy className="w-5 h-5 text-white" /> },
-                  { label: "Longest Streak",      value: `${streak} ${streak === 1 ? "day" : "days"}`, bg: "bg-green-50",  iconBg: "bg-green-500",  icon: <Flame className="w-5 h-5 text-white" /> },
-                  { label: "Memory High Score",   value: stats?.memoryHigh ?? 0,  bg: "bg-sky-50",    iconBg: "bg-sky-500",    icon: <Trophy className="w-5 h-5 text-white" /> },
-                  { label: "Combos High Score",   value: stats?.comboHigh ?? 0,   bg: "bg-violet-50", iconBg: "bg-violet-500", icon: <Trophy className="w-5 h-5 text-white" /> },
-                  { label: "Battle High Score",   value: stats?.battleHigh ?? 0,  bg: "bg-orange-50", iconBg: "bg-orange-500", icon: <Trophy className="w-5 h-5 text-white" /> },
+                  { label: "Games Played",       value: stats?.gamesPlayed ?? 0,  bg: "bg-purple-50 dark:bg-purple-900/30", iconBg: "bg-purple-500", icon: <Trophy className="w-5 h-5 text-white" /> },
+                  { label: "Longest Streak",      value: `${streak} ${streak === 1 ? "day" : "days"}`, bg: "bg-green-50 dark:bg-green-900/30",  iconBg: "bg-green-500",  icon: <Flame className="w-5 h-5 text-white" /> },
+                  { label: "Memory High Score",   value: stats?.memoryHigh ?? 0,  bg: "bg-sky-50 dark:bg-sky-900/30",    iconBg: "bg-sky-500",    icon: <Trophy className="w-5 h-5 text-white" /> },
+                  { label: "Combos High Score",   value: stats?.comboHigh ?? 0,   bg: "bg-violet-50 dark:bg-violet-900/30", iconBg: "bg-violet-500", icon: <Trophy className="w-5 h-5 text-white" /> },
+                  { label: "Battle High Score",   value: stats?.battleHigh ?? 0,  bg: "bg-orange-50 dark:bg-orange-900/30", iconBg: "bg-orange-500", icon: <Trophy className="w-5 h-5 text-white" /> },
                 ].map(({ label, value, bg, iconBg, icon }) => (
                   <div key={label} className={`flex items-center gap-3 p-3 ${bg} rounded-lg`}>
                     <div className={`w-10 h-10 ${iconBg} rounded-lg flex items-center justify-center shrink-0`}>
                       {icon}
                     </div>
                     <div>
-                      <div className="text-sm text-gray-600">{label}</div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">{label}</div>
                       {loading
-                        ? <div className="h-5 w-12 bg-gray-200 animate-pulse rounded mt-1" />
-                        : <div className="font-bold text-gray-900">{value}</div>
+                        ? <div className="h-5 w-12 bg-gray-200 dark:bg-gray-600 animate-pulse rounded mt-1" />
+                        : <div className="font-bold text-gray-900 dark:text-white">{value}</div>
                       }
                     </div>
                   </div>

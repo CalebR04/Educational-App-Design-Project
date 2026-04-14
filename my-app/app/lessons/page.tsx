@@ -291,7 +291,7 @@ function LessonCard({ lesson, mounted, onReset }: { lesson: LessonWithStatus; mo
           {showCompleted  && <><span className="text-green-600">✓</span><span className="text-green-600">Completed</span></>}
           {showInProgress && <><PlayCircle className="h-4 w-4 text-blue-600" /><span className="text-blue-600">In Progress</span></>}
           {showNotStarted && !isLocked && <><BookOpen className="h-4 w-4 text-gray-500" /><span className="text-gray-500">Not Started</span></>}
-          {isLocked       && <><Lock className="h-4 w-4 text-gray-400" /><span className="text-gray-400">Locked</span></>}
+          {isLocked       && <><Lock className="h-4 w-4 text-gray-400" /><span className="text-gray-400">Complete Unit {lesson.level - 1} to unlock</span></>}
         </div>
 
         <div className="flex items-center gap-3">
