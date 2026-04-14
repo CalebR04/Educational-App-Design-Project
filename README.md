@@ -1,8 +1,20 @@
 # Educational-App-Design-Project
 Ontario Tech University Class Project CSCI 4080U
 
+To access the app, click the link below and create an account to get started!
+
+*Note: The app unlocks as you complete lessons. For an account that has all lessons completed, use the following credentials*
+Email: admin@gmail.com
+Password: !QAZ1qaz
+
+[Sign Quest](https://yellow-ground-0e89cbe10.1.azurestaticapps.net/profile)
+
+
+
+
+
+
+
+
 Prototype Video: https://drive.google.com/drive/folders/1stXOhmaf_tgMeeUdEFADNsvZnqnij0IK?usp=sharing
 
-The launch.bat file can take up to 10 minutes to launch.
-
-As a backup here is a link to an older version of our site: https://signquestv2.vercel.app/ 
