@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import { conversationScenarios } from "@/data/conversations/scenarios";
 import type { ConvSign, ResponseOption } from "@/data/conversations/scenarios";
-import { ChevronLeft, CheckCircle2, XCircle, Eye, EyeOff, ArrowRight, RotateCcw, X, Trophy, MessageSquare, Play } from "lucide-react";
+import { ChevronLeft, CheckCircle2, XCircle, Eye, EyeOff, ArrowRight, RotateCcw, Trophy, Play } from "lucide-react";
 import { useSound } from "@/hooks/useSound";
 
 type Phase = "partner_signing" | "responding" | "reaction" | "complete";
@@ -151,10 +151,9 @@ export default function ConversationRoomPage() {
   const [phase,           setPhase]           = useState<Phase>("partner_signing");
   const [signingDone,     setSigningDone]     = useState(false);
   const [replayKey,       setReplayKey]       = useState(0);
-  const [wordBankPool,    setWordBankPool]     = useState<ConvSign[]>([]);
-  const [wordBankPicked,  setWordBankPicked]   = useState<ConvSign[]>([]);
   const [isCorrect,       setIsCorrect]       = useState<boolean | null>(null);
-  const [answered,        setAnswered]        = useState(false);   // first attempt done
+  const [answered,        setAnswered]        = useState(false);
+  const [firstAttemptFailed, setFirstAttemptFailed] = useState(false);
   const [score,           setScore]           = useState(0);
   const [showHint,        setShowHint]        = useState(false);
   const [reactionUrl,     setReactionUrl]     = useState<string | null>(null);
@@ -179,25 +178,9 @@ export default function ConversationRoomPage() {
 
   const turn       = scenario.turns[turnIdx];
   const isLastTurn = turnIdx === scenario.turns.length - 1;
-  // Alternate modes: even turns → video choice; odd turns → word bank
-  const mode: "video_choice" | "word_bank" = turnIdx % 2 === 0 ? "video_choice" : "word_bank";
-
-  // ── Build word bank when entering word_bank mode ──────────────────────────
-  useEffect(() => {
-    if (phase !== "responding" || mode !== "word_bank") return;
-    const correctSrcs = new Set(turn.yourSigns.map(s => s.src));
-    const pool: ConvSign[] = [];
-    for (const t of scenario.turns) {
-      for (const s of [...t.yourSigns, ...t.partnerSigns]) {
-        if (!correctSrcs.has(s.src) && !pool.find(p => p.src === s.src)) {
-          pool.push(s);
-        }
-      }
-    }
-    const distractors = shuffle(pool).slice(0, 3);
-    setWordBankPool(shuffle([...turn.yourSigns, ...distractors]));
-    setWordBankPicked([]);
-  }, [phase, turnIdx, mode]);
+  // Shuffle options each time the turn changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const shuffledOptions = useMemo(() => shuffle(turn.options), [turnIdx]);
 
   // ── Play reaction video when it appears ──────────────────────────────────
   useEffect(() => {
@@ -211,6 +194,7 @@ export default function ConversationRoomPage() {
     setPhase("responding");
     setIsCorrect(null);
     setAnswered(false);
+    setFirstAttemptFailed(false);
     setShowHint(false);
   }
 
@@ -220,9 +204,9 @@ export default function ConversationRoomPage() {
     } else {
       setTurnIdx(i => i + 1);
       setPhase("partner_signing");
-      setWordBankPicked([]);
       setIsCorrect(null);
       setAnswered(false);
+      setFirstAttemptFailed(false);
       setReactionUrl(null);
       setSigningDone(false);
       setReplayKey(0);
@@ -230,11 +214,13 @@ export default function ConversationRoomPage() {
   }
 
   function resolveAnswer(correct: boolean, reactionVideo?: string) {
+    if (!correct && !answered) setFirstAttemptFailed(true);
     setAnswered(true);
     setIsCorrect(correct);
     if (correct) {
       play(isLastTurn ? "level_complete" : "correct");
-      setScore(s => s + 1);
+      // Only count toward accuracy if the first attempt was correct (no prior failures)
+      if (!firstAttemptFailed) setScore(s => s + 1);
       setTimeout(handleNext, 1000);
     } else {
       play("incorrect");
@@ -250,21 +236,17 @@ export default function ConversationRoomPage() {
     resolveAnswer(opt.correct, opt.reactionVideoUrl);
   }
 
-  function handleWordBankSubmit() {
-    const picked  = [...wordBankPicked.map(s => s.src)].sort();
-    const correct = [...turn.yourSigns.map(s => s.src)].sort();
-    resolveAnswer(picked.length === correct.length && picked.every((src, i) => src === correct[i]));
-  }
-
   function handleRetry() {
     setIsCorrect(null);
     setAnswered(false);
-    setWordBankPicked([]);
   }
 
   // ── Complete ──────────────────────────────────────────────────────────────
   if (phase === "complete") {
     const pct = Math.round((score / scenario.turns.length) * 100);
+    if (typeof window !== "undefined") {
+      localStorage.setItem(`conv_${scenario.id}`, JSON.stringify({ pct }));
+    }
     return (
       <div className="min-h-screen bg-white dark:bg-gray-900">
         <Navbar active="Lessons" />
@@ -284,7 +266,7 @@ export default function ConversationRoomPage() {
 
           <div className="flex flex-col gap-3">
             <button
-              onClick={() => { setTurnIdx(0); setScore(0); setIsCorrect(null); setPhase("intro"); }}
+              onClick={() => { setTurnIdx(0); setScore(0); setIsCorrect(null); setAnswered(false); setFirstAttemptFailed(false); setPhase("partner_signing"); }}
               className="w-full bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white py-3.5 rounded-xl font-bold hover:bg-gray-200 dark:hover:bg-gray-700 transition flex items-center justify-center gap-2"
             >
               <RotateCcw className="w-4 h-4" /> Try Again
@@ -405,7 +387,7 @@ export default function ConversationRoomPage() {
 
             <div className="flex items-center justify-between mb-3">
               <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                {mode === "video_choice" ? "Choose your response:" : "Build your response:"}
+                Choose your response:
               </p>
               <button
                 onClick={() => setShowHint(h => !h)}
@@ -422,68 +404,17 @@ export default function ConversationRoomPage() {
               </div>
             )}
 
-            {/* Mode 1 — Video Choice */}
-            {mode === "video_choice" && (
-              <div className="grid grid-cols-4 gap-3">
-                {turn.options.map(opt => (
-                  <ResponseCard
-                    key={opt.id}
-                    signs={opt.signs}
-                    onSelect={() => handleVideoChoice(opt)}
-                    disabled={answered && isCorrect !== false}
-                  />
-                ))}
-              </div>
-            )}
-
-            {/* Mode 2 — Word Bank */}
-            {mode === "word_bank" && (
-              <>
-                <div className="min-h-14 bg-gray-50 dark:bg-gray-800 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-2xl p-3 mb-3 flex flex-wrap gap-2 items-start">
-                  {wordBankPicked.length === 0 ? (
-                    <p className="text-xs text-gray-400 italic self-center">Tap words below to build your response…</p>
-                  ) : (
-                    wordBankPicked.map((sign, i) => (
-                      <button
-                        key={`picked-${i}`}
-                        onClick={() => !answered && setWordBankPicked(p => p.filter((_, j) => j !== i))}
-                        className="bg-blue-500 text-white text-sm font-bold px-3 py-1.5 rounded-xl flex items-center gap-1 hover:bg-blue-600 transition"
-                      >
-                        {sign.label} <X className="w-3 h-3" />
-                      </button>
-                    ))
-                  )}
-                </div>
-
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {wordBankPool.map((sign, i) => {
-                    const used = wordBankPicked.some(p => p.src === sign.src);
-                    return (
-                      <button
-                        key={`bank-${i}`}
-                        onClick={() => !used && !answered && setWordBankPicked(p => [...p, sign])}
-                        disabled={used || answered}
-                        className={`text-sm font-bold px-3 py-2 rounded-xl border-2 transition ${
-                          used || answered
-                            ? "border-gray-200 dark:border-gray-700 text-gray-300 dark:text-gray-600 cursor-default"
-                            : "border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-800 hover:border-blue-400 hover:text-blue-600 dark:hover:text-blue-400 active:scale-95"
-                        }`}
-                      >
-                        {sign.label}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <button
-                  onClick={handleWordBankSubmit}
-                  disabled={wordBankPicked.length === 0 || answered}
-                  className="w-full bg-linear-to-r from-blue-500 to-purple-600 text-white py-3.5 rounded-xl font-bold hover:opacity-90 transition disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  Check Answer
-                </button>
-              </>
-            )}
+            {/* Video Choice — 3 options, centered */}
+            <div className="grid grid-cols-3 gap-3 max-w-2xl mx-auto w-full">
+              {shuffledOptions.map(opt => (
+                <ResponseCard
+                  key={opt.id}
+                  signs={opt.signs}
+                  onSelect={() => handleVideoChoice(opt)}
+                  disabled={answered && isCorrect !== false}
+                />
+              ))}
+            </div>
           </>
         )}
 

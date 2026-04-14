@@ -37,23 +37,23 @@ const signLibrary: Sign[] = [
 
 // Question Bank
 const allPhrases = [
-  { english: "I am going home now", correctOrder: ['now', 'me', 'go', 'home'] },
-  { english: "Yesterday they worked at school", correctOrder: ['yesterday', 'school', 'they', 'work'] },
-  { english: "Tomorrow you want to eat at the restaurant", correctOrder: ['tomorrow', 'restaurant', 'you', 'want', 'eat'] },
-  { english: "I see you at the gym at night", correctOrder: ['night', 'gym', 'me', 'see', 'you'] },
-  { english: "He likes to sleep at home", correctOrder: ['home', 'index', 'like', 'sleep'] },
-  { english: "They learn at school now", correctOrder: ['now', 'school', 'they', 'learn'] },
-  { english: "Yesterday I went to the restaurant", correctOrder: ['yesterday', 'restaurant', 'me', 'go'] },
-  { english: "Tomorrow she wants to go to the gym", correctOrder: ['tomorrow', 'gym', 'index', 'want', 'go'] },
-  { english: "I like to eat at home", correctOrder: ['home', 'me', 'like', 'eat'] },
-  { english: "You sleep at school at night", correctOrder: ['night', 'school', 'you', 'sleep'] },
+  { english: "I am going home now",                          correctOrder: ['me', 'go', 'home', 'now'] },
+  { english: "Yesterday they worked at school",              correctOrder: ['yesterday', 'they', 'work', 'school'] },
+  { english: "Tomorrow you want to eat at the restaurant",   correctOrder: ['tomorrow', 'you', 'want', 'eat', 'restaurant'] },
+  { english: "I see you at the gym at night",                correctOrder: ['me', 'see', 'you', 'gym', 'night'] },
+  { english: "He likes to sleep at home",                    correctOrder: ['index', 'like', 'sleep', 'home'] },
+  { english: "They learn at school now",                     correctOrder: ['they', 'learn', 'school', 'now'] },
+  { english: "Yesterday I went to the restaurant",           correctOrder: ['yesterday', 'me', 'go', 'restaurant'] },
+  { english: "Tomorrow she wants to go to the gym",          correctOrder: ['tomorrow', 'index', 'want', 'go', 'gym'] },
+  { english: "I like to eat at home",                        correctOrder: ['me', 'like', 'eat', 'home'] },
+  { english: "You sleep at school at night",                 correctOrder: ['you', 'sleep', 'school', 'night'] },
 ];
 
 export default function SignComboPage() {
   const [mounted, setMounted] = useState(false);
   const [gamePhrases, setGamePhrases] = useState<typeof allPhrases>([]);
   const [currentIdx, setCurrentIdx] = useState(0);
-  const [workArea, setWorkArea] = useState<Sign[]>([]);
+  const [workArea, setWorkArea] = useState<(Sign | null)[]>([]);
   const { play } = useSound();
   const [currentBank, setCurrentBank] = useState<Sign[]>([]);
   
@@ -69,6 +69,8 @@ export default function SignComboPage() {
   const [hint, setHint] = useState("");
   const [showReveal, setShowReveal] = useState(false);
   const [colorMap, setColorMap] = useState<('green' | 'yellow' | 'gray')[]>([]);
+  // Snapshot of workArea at check time — used to tie borders to positions, not cards
+  const [scoredWorkArea, setScoredWorkArea] = useState<(Sign | null)[]>([]);
 
   // UI & Drag States
   const [showInfoModal, setShowInfoModal] = useState(false);
@@ -97,12 +99,13 @@ export default function SignComboPage() {
   };
 
   const setupPhrase = (phrase: typeof allPhrases[0]) => {
-    setWorkArea([]);
+    setWorkArea(new Array(phrase.correctOrder.length).fill(null));
     setHasBeenScored(false);
     setIsCorrect(false);
     setHint("");
     setShowReveal(false);
     setColorMap([]);
+    setScoredWorkArea([]);
 
     // Build the 6-sign bank
     const correctIds = phrase.correctOrder;
@@ -113,7 +116,7 @@ export default function SignComboPage() {
 
   const checkPhrase = () => {
     const target = gamePhrases[currentIdx].correctOrder;
-    const user = workArea.map(s => s.id);
+    const user = workArea.map(s => s?.id ?? '');
 
     // Wordle-like coloring
     const colorMap: ('green' | 'yellow' | 'gray')[] = user.map((id, idx) => {
@@ -142,6 +145,7 @@ export default function SignComboPage() {
     }
 
     setColorMap(colorMap);
+    setScoredWorkArea([...workArea]);
     setHint(`Correct positions: ${correctPositions}, Correct signs: ${correctSigns}`);
     setShowReveal(false);
   };
@@ -177,9 +181,9 @@ export default function SignComboPage() {
     if (draggedIdx === null || draggedIdx === targetIdx) return;
 
     const newWorkArea = [...workArea];
-    const draggedItem = newWorkArea.splice(draggedIdx, 1)[0]; // Remove from old spot
-    newWorkArea.splice(targetIdx, 0, draggedItem); // Insert into new spot
-    
+    // Swap the two slots (works for both filled↔filled and filled↔empty)
+    [newWorkArea[draggedIdx], newWorkArea[targetIdx]] = [newWorkArea[targetIdx], newWorkArea[draggedIdx]];
+
     setWorkArea(newWorkArea);
     setDraggedIdx(null);
   };
@@ -191,7 +195,7 @@ export default function SignComboPage() {
   if (!mounted || gamePhrases.length === 0) return null;
 
   const availableSigns = currentBank.filter(
-    (bankSign) => !workArea.some((workSign) => workSign.id === bankSign.id)
+    (bankSign) => !workArea.some((workSign) => workSign?.id === bankSign.id)
   );
 
   if (gameOver) {
@@ -312,51 +316,70 @@ export default function SignComboPage() {
 
 
           {/* WORK AREA */}
-          <div className="bg-blue-50/50 border-2 border-dashed border-blue-200 rounded-xl p-3 h-32 flex flex-wrap gap-2 sm:gap-3 items-center justify-center overflow-hidden shrink-0">
-            {workArea.length === 0 ? (
-              <div className="flex flex-col items-center text-blue-300">
-                <MoveHorizontal size={20} className="mb-1" />
-                <p className="font-medium text-xs">Selected signs will appear here</p>
-              </div>
-            ) : (
-              workArea.map((sign, idx) => {
-                const uniqueKey = `${sign.id}-work-${idx}`;
-                const isDragging = draggedIdx === idx;
+          <div className="bg-blue-50/50 border-2 border-dashed border-blue-200 rounded-xl p-3 h-32 flex gap-2 sm:gap-3 items-center justify-center overflow-hidden shrink-0">
+            {workArea.map((sign, idx) => {
+              const isDragging = draggedIdx === idx;
 
+              if (!sign) {
+                // Empty placeholder slot
                 return (
                   <div
-                    key={uniqueKey}
-                    draggable
-                    onDragStart={() => handleDragStart(idx)}
+                    key={`placeholder-${idx}`}
                     onDragOver={handleDragOver}
                     onDrop={(e) => handleDrop(e, idx)}
-                    onDragEnd={handleDragEnd}
-                    className={`relative bg-white p-1 rounded-lg shadow-md border border-blue-200 overflow-hidden animate-in fade-in zoom-in duration-200 cursor-grab active:cursor-grabbing transition-all ${
-                      isDragging ? "opacity-40 scale-95" : ""
-                    } ${hasBeenScored ? (colorMap[idx] === 'green' ? 'ring-2 ring-green-500' : colorMap[idx] === 'yellow' ? 'ring-2 ring-yellow-500' : 'ring-2 ring-gray-500') : ''}`}
+                    className="w-24 h-20 rounded-lg border-2 border-dashed border-blue-300 bg-blue-50 flex items-center justify-center shrink-0"
                   >
-                    {/* Sizes for the Work Area */}
-                    <div className="w-16 h-20 bg-gray-100 rounded-md overflow-hidden shrink-0">
-                       <video
-                          src={sign.videoUrl}
-                          autoPlay
-                          loop
-                          muted
-                          playsInline
-                          className="w-full h-full object-cover scale-[1] origin-center pointer-events-none"
-                        />
-                    </div>
+                    <span className="text-blue-300 text-lg font-black">{idx + 1}</span>
                   </div>
                 );
-              })
-            )}
+              }
+
+              return (
+                <div
+                  key={`${sign.id}-work-${idx}`}
+                  draggable
+                  onDragStart={() => handleDragStart(idx)}
+                  onDragOver={handleDragOver}
+                  onDrop={(e) => handleDrop(e, idx)}
+                  onDragEnd={handleDragEnd}
+                  onClick={() => {
+                    const newArea = [...workArea];
+                    newArea[idx] = null;
+                    setWorkArea(newArea);
+                    setHint("");
+                  }}
+                  className={`relative bg-white p-1 rounded-lg shadow-md border border-blue-200 overflow-hidden cursor-pointer active:cursor-grabbing transition-all shrink-0 ${
+                    isDragging ? "opacity-40 scale-95" : "hover:opacity-80"
+                  } ${
+                    hasBeenScored && scoredWorkArea[idx]?.id === sign.id
+                      ? colorMap[idx] === 'green'
+                        ? 'ring-2 ring-green-500'
+                        : colorMap[idx] === 'yellow'
+                        ? 'ring-2 ring-yellow-500'
+                        : 'ring-2 ring-gray-400'
+                      : ''
+                  }`}
+                >
+                  <div className="w-24 h-20 bg-gray-100 rounded-md overflow-hidden shrink-0">
+                    <video
+                      src={sign.videoUrl}
+                      autoPlay
+                      loop
+                      muted
+                      playsInline
+                      className="w-full h-full object-cover scale-[1] origin-center pointer-events-none"
+                    />
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
           {/* CARD LIBRARY BANK */}
           <div
             className="relative bg-white border border-gray-100 rounded-xl p-3 sm:p-4 shadow-sm w-full shrink-0 mt-1"
             onDragOver={(e) => { e.preventDefault(); }}
-            onDrop={() => { if (draggedIdx !== null) { setWorkArea(workArea.filter((_, i) => i !== draggedIdx)); setDraggedIdx(null); } }}
+            onDrop={() => { if (draggedIdx !== null) { const a = [...workArea]; a[draggedIdx] = null; setWorkArea(a); setDraggedIdx(null); } }}
           >
             {draggedIdx !== null && (
               <div className="absolute inset-0 rounded-xl flex items-center justify-center pointer-events-none z-10">
@@ -369,15 +392,15 @@ export default function SignComboPage() {
               
               <div className="flex items-center gap-2">
                 <button 
-                  onClick={() => {setWorkArea([]); setHint(""); setShowReveal(false);}}
-                  disabled={workArea.length === 0}
+                  onClick={() => {setWorkArea(new Array(gamePhrases[currentIdx].correctOrder.length).fill(null)); setHint(""); setShowReveal(false);}}
+                  disabled={workArea.every(s => s === null)}
                   className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-gray-500 rounded-lg hover:bg-red-50 hover:text-red-500 disabled:opacity-30 transition-colors"
                 >
                   <RefreshCcw size={14} /> <span className="hidden sm:inline">Reset</span>
                 </button>
                 <button 
                   onClick={checkPhrase} 
-                  disabled={workArea.length === 0 || isCorrect || showReveal}
+                  disabled={workArea.some(s => s === null) || isCorrect || showReveal}
                   className="bg-black text-white px-4 sm:px-5 py-1.5 sm:py-2 rounded-lg font-bold hover:bg-gray-800 disabled:opacity-30 transition-all flex items-center gap-1.5 text-xs sm:text-sm shadow-sm"
                 >
                   <Play size={14} fill="currentColor" /> Check
@@ -395,11 +418,16 @@ export default function SignComboPage() {
                     <button
                       key={uniqueKey}
                       onClick={() => {
-                        setWorkArea([...workArea, sign]);
-                        setHint(""); 
+                        const firstEmpty = workArea.findIndex(s => s === null);
+                        if (firstEmpty !== -1) {
+                          const newArea = [...workArea];
+                          newArea[firstEmpty] = sign;
+                          setWorkArea(newArea);
+                          setHint("");
+                        }
                       }}
                       // Sizes for the Bank Area
-                      className="h-20 sm:h-24 md:h-28 lg:h-32 xl:h-40 2xl:h-48 aspect-[3/4] bg-gray-50 border border-gray-200 rounded-xl overflow-hidden hover:border-blue-400 hover:shadow-md transition-all active:scale-95 group animate-in fade-in duration-300 relative shrink-0"
+                      className="h-20 sm:h-24 md:h-28 lg:h-32 xl:h-40 2xl:h-48 aspect-square bg-gray-50 border border-gray-200 rounded-xl overflow-hidden hover:border-blue-400 hover:shadow-md transition-all active:scale-95 group animate-in fade-in duration-300 relative shrink-0"
                     >
                       <div className="w-full h-full pointer-events-none bg-slate-900">
                           <video 
@@ -440,10 +468,10 @@ export default function SignComboPage() {
                 </ul>
               </div>
               <div>
-                <h3 className="font-bold text-blue-900 mb-3 flex items-center gap-2 text-lg"><BookOpen size={18} className="text-blue-600" /> ASL Grammar Tips</h3>
+                <h3 className="font-bold text-blue-900 mb-3 flex items-center gap-2 text-lg"><BookOpen size={18} className="text-blue-600" /> Grammar Tips</h3>
                 <ul className="text-xs text-blue-800 leading-relaxed space-y-2 bg-blue-50 p-4 rounded-xl border border-blue-100 list-disc pl-6 marker:text-blue-400">
-                  <li><strong>Time First:</strong> Always place time words (NOW, YESTERDAY, TOMORROW) at the very beginning of your sentence.</li>
-                  <li><strong>Drop the Extras:</strong> ASL doesn't use words like "am," "is," "are," "the," or "to." Just stick to the core signs!</li>
+                  <li><strong>English Order:</strong> Arrange signs in the same order as the English sentence — subject, verb, object, then time/place.</li>
+                  <li><strong>Drop the Extras:</strong> Skip words like "am," "is," "are," "the," and "to." Just use the core signs for each word!</li>
                 </ul>
               </div>
             </div>

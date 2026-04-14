@@ -11,16 +11,30 @@ import { upsertLessonProgress } from "@/lib/supabase/lessonProgress";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 
-const supabase = createClient();
-
 async function trackWordProgress(wordKey: string, isCorrect: boolean) {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return;
+  // Resolve the right client + user ID (real auth or anonymous guest).
+  let client;
+  let userId: string;
 
-  const { data: existing } = await supabase
+  const regularClient = createClient();
+  const { data: { user } } = await regularClient.auth.getUser();
+  if (user && !user.is_anonymous) {
+    client = regularClient;
+    userId = user.id;
+  } else {
+    const { getGuestClient } = await import("@/lib/supabase/guestClient");
+    const guestClient = getGuestClient();
+    if (!guestClient) return;
+    const { data: { user: guestUser } } = await guestClient.auth.getUser();
+    if (!guestUser) return;
+    client = guestClient;
+    userId = guestUser.id;
+  }
+
+  const { data: existing } = await client
     .from("word_progress")
     .select("attempts, correct, streak, is_learned")
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
     .eq("word_key", wordKey)
     .maybeSingle();
 
@@ -34,8 +48,8 @@ async function trackWordProgress(wordKey: string, isCorrect: boolean) {
   const newStreak   = mastered ? 0 : rawStreak;
   const isLearned   = existing?.is_learned === true || (newAttempts >= 3 && newCorrect / newAttempts >= 0.8);
 
-  await supabase.from("word_progress").upsert({
-    user_id: user.id,
+  await client.from("word_progress").upsert({
+    user_id: userId,
     word_key: wordKey,
     attempts: newAttempts,
     correct: newCorrect,
@@ -94,7 +108,6 @@ export default function LessonPlayer() {
   const staticLesson = staticLessons[lessonId];
   const dynConfig = dynamicLessonConfigs[lessonId];
   const lessonTitle = staticLesson?.title ?? dynConfig?.title ?? lessonId;
-  const lessonTip = dynConfig?.tip;
   const lessonMeta = allLessonMeta.find(m => m.id === lessonId);
 
   const [steps, setSteps] = useState<LessonStep[]>([]);
@@ -111,10 +124,10 @@ export default function LessonPlayer() {
   const [wrongPhase, setWrongPhase] = useState<"none" | "retry">("none");
   const [lastWrongAnswer, setLastWrongAnswer] = useState<string | null>(null);
   const [practiceAgain, setPracticeAgain] = useState(false);
-  const [showTip, setShowTip] = useState(false);
   const savedProgressRef = useRef<{ status: string; progress: number; correctCount: number; currentIndex: number; queue: LessonStep[] } | null>(null);
   const skipSaveRef = useRef(false);
   const everCompletedRef = useRef(false);
+  const typeInputRef = useRef<HTMLInputElement>(null);
 
   // Generate fresh random steps and load saved progress on every mount
   useEffect(() => {
@@ -129,12 +142,29 @@ export default function LessonPlayer() {
     setSteps(freshSteps);
 
     async function load() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data } = await supabase
+      // Resolve right client + user (real auth or anonymous guest).
+      let progressClient;
+      let userId: string | null = null;
+
+      const regularClient = createClient();
+      const { data: { user } } = await regularClient.auth.getUser();
+      if (user && !user.is_anonymous) {
+        progressClient = regularClient;
+        userId = user.id;
+      } else {
+        const { getGuestClient } = await import("@/lib/supabase/guestClient");
+        const guestClient = getGuestClient();
+        if (guestClient) {
+          const { data: { user: guestUser } } = await guestClient.auth.getUser();
+          if (guestUser) { progressClient = guestClient; userId = guestUser.id; }
+        }
+      }
+
+      if (progressClient && userId) {
+        const { data } = await progressClient
           .from("lesson_progress")
           .select("status, progress, ever_completed, correct_count")
-          .eq("user_id", user.id)
+          .eq("user_id", userId)
           .eq("lesson_id", lessonId)
           .single();
         if (data) {
@@ -151,7 +181,6 @@ export default function LessonPlayer() {
       }
       setQueue(freshSteps);
       setMounted(true);
-      if (dynConfig?.tip) setShowTip(true);
     }
     load();
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -165,13 +194,14 @@ export default function LessonPlayer() {
     upsertLessonProgress(lessonId, { status: status as "Not Started" | "In Progress", progress: progressPct, ever_completed: everCompletedRef.current, correct_count: correctCount });
   }, [currentIndex, correctCount, mounted, isFinished, lessonId, steps.length, queue.length]);
 
-  // Warn on close mid-lesson
+
+  // Auto-focus the text input whenever a type/synthesize step becomes active
   useEffect(() => {
-    if (isFinished) return;
-    const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); };
-    window.addEventListener("beforeunload", handler);
-    return () => window.removeEventListener("beforeunload", handler);
-  }, [isFinished]);
+    const step = queue[currentIndex];
+    if (step?.type === "type" || step?.type === "synthesize") {
+      typeInputRef.current?.focus();
+    }
+  }, [currentIndex, queue]);
 
   // Enter key → Check / Continue
   useEffect(() => {
@@ -197,7 +227,7 @@ export default function LessonPlayer() {
             {lessonMeta?.levelTitle ?? "Lesson"}
           </p>
           <h1 className="text-3xl font-black text-gray-900 mb-1 text-center">{lessonTitle}</h1>
-          <p className="text-sm text-gray-500 text-center mb-8">{lessonMeta?.duration} · {steps.length} questions</p>
+          <p className="text-sm text-gray-500 text-center mb-8">{lessonMeta?.duration}</p>
 
           <div className="bg-blue-50 rounded-2xl p-5 mb-8">
             <p className="text-xs font-bold text-blue-600 uppercase tracking-widest mb-3">By the end of this lesson you will</p>
@@ -257,7 +287,8 @@ export default function LessonPlayer() {
 
     if (isCorrect) {
       play("correct");
-      setCorrectCount(prev => Math.min(steps.length, prev + 1));
+      // Only count progress on first-attempt correct answers, not retried questions
+      if (wrongPhase !== "retry") setCorrectCount(prev => Math.min(steps.length, prev + 1));
       setFeedback("correct");
       setWrongPhase("none");
       setLastWrongAnswer(null);
@@ -347,22 +378,6 @@ export default function LessonPlayer() {
           <Link href={`/lessons/sign-practice?lesson=${lessonId}`} className="rounded-2xl bg-blue-500 px-10 py-4 font-bold text-white transition hover:bg-blue-600 shadow-md shadow-blue-200">
             Practice
           </Link>
-        </div>
-      </div>
-    );
-  }
-
-  // ── Lesson Tip Modal ───────────────────────────────────────────────────
-  if (showTip && lessonTip) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-white p-6 text-center">
-        <div className="max-w-sm">
-          <div className="mb-4 text-5xl">💡</div>
-          <h2 className="text-2xl font-black text-slate-900 mb-3">Helpful Tip</h2>
-          <p className="text-lg text-slate-600 mb-8">{lessonTip}</p>
-          <button onClick={() => setShowTip(false)} className="w-full rounded-2xl bg-blue-500 py-4 font-bold text-white hover:bg-blue-600 transition">
-            Got it, let's go!
-          </button>
         </div>
       </div>
     );
@@ -497,7 +512,7 @@ export default function LessonPlayer() {
               )}
             </div>
             <input
-              autoFocus
+              ref={typeInputRef}
               type="text"
               value={textInput}
               onChange={(e) => setTextInput(e.target.value)}

@@ -166,14 +166,11 @@ function makeMissingSignStep(
 
 /**
  * Sentence step — shows signs played sequentially, learner picks from 3 text options.
- * Distractors come from the other sentences in the same lesson.
+ * Distractors come from the sentence's own custom `distractors` field.
  */
-function makeSentenceStep(s: SentenceItem, allSentences: SentenceItem[], idSuffix = ""): LessonStep {
+function makeSentenceStep(s: SentenceItem, _allSentences: SentenceItem[], idSuffix = ""): LessonStep {
   const correct = s.answer;
-  const distractors = allSentences
-    .filter(other => other.id !== s.id)
-    .map(other => other.answer);
-  const options = shuffle([correct, ...distractors.slice(0, 2)]).map(text => ({
+  const options = shuffle([correct, ...s.distractors]).map(text => ({
     id: text,
     label: text,
   }));
@@ -355,12 +352,16 @@ export function generateSteps(
     }
   }
 
-  // Sentence and missing-sign steps at the very end, interleaved
-  for (const [i, s] of shuffle(sentences).entries()) {
+  // Sentence steps first (shuffled), then missing-sign steps (re-shuffled separately)
+  // so the same sentence never appears back-to-back with its fill-in-the-blank variant
+  const sentenceOrder     = shuffle([...sentences]);
+  const missingSignOrder  = shuffle([...sentences].filter(s => s.signs.length >= 2));
+
+  for (const [i, s] of sentenceOrder.entries()) {
     steps.push(makeSentenceStep(s, sentences, `-${i}`));
-    if (s.signs.length >= 2) {
-      steps.push(makeMissingSignStep(s, vocab, sentences, `-${i}`));
-    }
+  }
+  for (const [i, s] of missingSignOrder.entries()) {
+    steps.push(makeMissingSignStep(s, vocab, sentences, `-ms${i}`));
   }
 
   return steps;

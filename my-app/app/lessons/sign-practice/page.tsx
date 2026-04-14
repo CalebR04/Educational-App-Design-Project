@@ -220,6 +220,7 @@ function SignPracticeInner() {
   const [sentenceInputs, setSentenceInputs]   = useState<string[]>([]);
   const [feedback, setFeedback]             = useState<"correct" | "incorrect" | null>(null);
   const [correctCount, setCorrectCount]     = useState(0);
+  const [progressCount, setProgressCount]   = useState(0); // includes retries, for progress bar only
   const [wrongPhase, setWrongPhase]         = useState<"none" | "hint" | "retry">("none");
   const [retryHint, setRetryHint]           = useState<string | null>(null);
   const [isFinished, setIsFinished]         = useState(false);
@@ -382,6 +383,7 @@ function SignPracticeInner() {
     if (isCorrect) {
       const isRetry = step.id.includes("-retry-");
       if (!isRetry) setCorrectCount(c => c + 1);
+      setProgressCount(c => c + 1);
       setFeedback("correct");
       setWrongPhase("none");
       setRetryHint(null);
@@ -532,7 +534,7 @@ function SignPracticeInner() {
 
   const step     = queue[currentIndex];
   if (!step) return null;
-  const progress = Math.round((correctCount / totalQuestions) * 100);
+  const progress = Math.round((progressCount / totalQuestions) * 100);
 
   return (
     <div className="h-screen overflow-hidden flex flex-col bg-white">

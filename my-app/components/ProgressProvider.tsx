@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 import { fetchAllLessonProgress } from "@/lib/supabase/lessonProgress";
 
 export type UnlockState = {
@@ -29,6 +30,42 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
     loaded: false,
   });
 
+  // ── Guest session: init + tab-close cleanup ────────────────────────────────
+  useEffect(() => {
+    const supabase = createClient();
+
+    async function init() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user && !user.is_anonymous) return; // Real user — nothing to do.
+
+      // No real user: ensure an anonymous guest session exists for this tab.
+      const { ensureGuestSession } = await import("@/lib/supabase/guestClient");
+      await ensureGuestSession();
+    }
+
+    init();
+
+    // On tab/browser close, delete the guest's rows from the database.
+    async function handlePageHide() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user && !user.is_anonymous) return; // Real user keeps their data.
+
+      const { getGuestUserId, getGuestAccessToken } = await import("@/lib/supabase/guestClient");
+      const [userId, accessToken] = await Promise.all([getGuestUserId(), getGuestAccessToken()]);
+      if (!userId || !accessToken) return;
+
+      // sendBeacon works even as the page unloads.
+      navigator.sendBeacon(
+        "/api/cleanup-guest",
+        new Blob([JSON.stringify({ userId, accessToken })], { type: "application/json" })
+      );
+    }
+
+    window.addEventListener("pagehide", handlePageHide);
+    return () => window.removeEventListener("pagehide", handlePageHide);
+  }, []);
+
+  // ── Unlock state ────────────────────────────────────────────────────────────
   useEffect(() => {
     fetchAllLessonProgress().then(data => {
       const completed = (ids: string[]) => ids.every(id => data[id]?.ever_completed === true);

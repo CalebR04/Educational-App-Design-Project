@@ -245,22 +245,25 @@ export default function BattleLobbyHome() {
       {/* How to play modal */}
       {showHelp && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-sm w-full shadow-2xl">
+          <div className="bg-white dark:bg-gray-800 rounded-3xl p-8 max-w-lg w-full shadow-2xl">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-gray-900 dark:text-white">How to Play</h2>
-              <button onClick={() => setShowHelp(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                <X className="w-5 h-5" />
+              <h2 className="text-2xl font-black text-slate-900 dark:text-white">How to Play</h2>
+              <button onClick={() => setShowHelp(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition">
+                <X className="w-6 h-6" />
               </button>
             </div>
-            <ul className="text-sm text-gray-600 dark:text-gray-300 space-y-3">
-              <li className="flex gap-2"><span className="text-orange-500 font-bold shrink-0">1.</span>Watch the ASL sign video and pick the correct word from 4 options</li>
-              <li className="flex gap-2"><span className="text-orange-500 font-bold shrink-0">2.</span>Answer faster than opponents to earn a speed bonus (up to +50 pts)</li>
-              <li className="flex gap-2"><span className="text-orange-500 font-bold shrink-0">3.</span>Wrong answers freeze you for 3 seconds — opponents get a head start</li>
-              <li className="flex gap-2"><span className="text-orange-500 font-bold shrink-0">4.</span>Most points after all rounds wins</li>
-            </ul>
+            <div className="space-y-3 text-sm text-slate-600 dark:text-slate-300 mb-6">
+              <p>Watch the ASL sign video and identify it before your opponents can!</p>
+              <ul className="space-y-2 list-none">
+                <li className="flex gap-2"><span className="text-orange-500 font-bold shrink-0">1.</span>A sign video plays — watch it closely.</li>
+                <li className="flex gap-2"><span className="text-orange-500 font-bold shrink-0">2.</span>Pick the correct word from 4 options.</li>
+                <li className="flex gap-2"><span className="text-orange-500 font-bold shrink-0">3.</span>Scores are revealed after each round.</li>
+                <li className="flex gap-2"><span className="text-orange-500 font-bold shrink-0">4.</span>Most points after all rounds wins!</li>
+              </ul>
+            </div>
             <button
               onClick={() => setShowHelp(false)}
-              className="w-full mt-5 bg-linear-to-r from-orange-500 to-red-600 text-white py-3 rounded-xl font-bold"
+              className="w-full rounded-2xl bg-linear-to-r from-orange-500 to-red-600 py-3 font-bold text-white hover:opacity-90 transition"
             >
               Got it!
             </button>

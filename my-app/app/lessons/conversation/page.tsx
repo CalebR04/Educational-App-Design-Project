@@ -5,11 +5,22 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { conversationScenarios } from "@/data/conversations/scenarios";
-import { ChevronLeft, X } from "lucide-react";
+import { ChevronLeft, X, CheckCircle2 } from "lucide-react";
+
+function loadCompletions(): Record<string, number> {
+  if (typeof window === "undefined") return {};
+  const data: Record<string, number> = {};
+  for (const s of conversationScenarios) {
+    const raw = localStorage.getItem(`conv_${s.id}`);
+    if (raw) { try { data[s.id] = JSON.parse(raw).pct; } catch {} }
+  }
+  return data;
+}
 
 export default function ConversationListPage() {
   const router = useRouter();
   const [showHelp, setShowHelp] = useState(false);
+  const [completions] = useState<Record<string, number>>(loadCompletions);
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900">
@@ -42,14 +53,17 @@ export default function ConversationListPage() {
             <Link
               key={scenario.id}
               href={`/lessons/conversation/${scenario.id}`}
-              className={`flex flex-col overflow-hidden rounded-2xl bg-linear-to-br ${scenario.color} hover:shadow-xl hover:scale-[1.02] transition-all`}
+              className={`relative flex flex-col overflow-hidden rounded-2xl bg-linear-to-br ${scenario.color} hover:shadow-xl hover:scale-[1.02] transition-all`}
             >
+              {completions[scenario.id] !== undefined && (
+                <div className="absolute top-3 right-3 flex items-center gap-1 bg-white/20 backdrop-blur-sm px-2.5 py-1 rounded-full">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-white" />
+                  <span className="text-white text-xs font-bold">{completions[scenario.id]}%</span>
+                </div>
+              )}
               <div className="p-6 text-white">
                 <h2 className="text-xl font-bold mb-2">{scenario.title}</h2>
-                <p className="text-white/90 text-sm mb-3">{scenario.description}</p>
-                <div className="inline-flex bg-white/20 backdrop-blur px-3 py-1 rounded-full text-sm font-semibold">
-                  {scenario.difficulty}
-                </div>
+                <p className="text-white/90 text-sm">{scenario.description}</p>
               </div>
             </Link>
           ))}
@@ -67,8 +81,8 @@ export default function ConversationListPage() {
             </div>
             <ul className="text-sm text-gray-600 dark:text-gray-300 space-y-3">
               <li className="flex gap-2"><span className="text-purple-500 font-bold shrink-0">1.</span>Watch a partner sign a sentence to you</li>
-              <li className="flex gap-2"><span className="text-purple-500 font-bold shrink-0">2.</span>Pick the correct response from 4 video options, or build it using a word bank</li>
-              <li className="flex gap-2"><span className="text-purple-500 font-bold shrink-0">3.</span>When using the word bank the sentence will only need the words for an ASL response (i.e. no filler words)</li>
+              <li className="flex gap-2"><span className="text-purple-500 font-bold shrink-0">2.</span>Pick the correct ASL response from 3 video options</li>
+              <li className="flex gap-2"><span className="text-purple-500 font-bold shrink-0">3.</span>Complete all turns to finish the conversation and earn a score badge</li>
             </ul>
             <button
               onClick={() => setShowHelp(false)}

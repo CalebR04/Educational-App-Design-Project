@@ -10,7 +10,8 @@ import { addGameScore, updateGameHighScore } from "@/lib/supabase/userStats";
 import { Trophy, Copy, Check, Crown, Snowflake, LogOut, Users, Play, X } from "lucide-react";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-const ROUND_TIMEOUT_MS  = 12_000;
+const ROUND_TIMEOUT_MS  = 11_000;
+const ROUND_GRACE_MS    = 1_000;   // score stays at 100 during the first second
 const FREEZE_MS         = 3_000;
 const RESULT_DISPLAY_MS = 3_000;
 const MAX_PLAYERS       = 4;
@@ -69,7 +70,7 @@ export default function BattleRoom() {
   const [roundCount,    setRoundCount]    = useState(5);
   const [lobbyError,    setLobbyError]    = useState<string | null>(null);
   const [copied,        setCopied]        = useState(false);
-  const [showLobbyHelp,    setShowLobbyHelp]    = useState(false);
+
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
 
   // Players (presence)
@@ -396,7 +397,8 @@ export default function BattleRoom() {
         continue;
       }
       const correct    = sub.answer === round.signName;
-      const points = correct ? Math.max(1, Math.round(100 * (1 - sub.reactionMs / ROUND_TIMEOUT_MS))) : 0;
+      const billableMs = Math.max(0, sub.reactionMs - ROUND_GRACE_MS);
+      const points = correct ? Math.max(1, Math.round(100 * (1 - billableMs / (ROUND_TIMEOUT_MS - ROUND_GRACE_MS)))) : 0;
       results[p.userId] = { answer: sub.answer, reactionMs: sub.reactionMs, correct, points };
       if (correct && sub.reactionMs < fastestMs) { fastestMs = sub.reactionMs; winnerId = p.userId; }
       if (!correct) frozenUntil[p.userId] = Date.now() + FREEZE_MS;
@@ -509,12 +511,6 @@ export default function BattleRoom() {
               <p className="text-xs text-gray-500 dark:text-gray-400">Waiting for players…</p>
             </div>
             <div className="flex items-center gap-2">
-              <button
-                onClick={() => setShowLobbyHelp(true)}
-                className="w-8 h-8 rounded-full border-2 border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-400 font-bold hover:border-blue-400 hover:text-blue-500 transition text-sm"
-              >
-                ?
-              </button>
               <button onClick={() => setShowLeaveConfirm(true)} className="flex items-center gap-1.5 text-xs font-semibold text-gray-400 hover:text-red-500 transition">
                 <LogOut className="w-3.5 h-3.5" /> Leave
               </button>
@@ -571,7 +567,7 @@ export default function BattleRoom() {
               <div className="bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-2xl p-4">
                 <p className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">Rounds</p>
                 <div className="flex gap-2">
-                  {[3, 5, 10].map(n => (
+                  {[3, 5, 7].map(n => (
                     <button key={n}
                       onClick={() => isHost && updateRoundCount(n)}
                       disabled={!isHost}
@@ -605,32 +601,6 @@ export default function BattleRoom() {
 
           </div>
         </main>
-
-        {/* How to play modal */}
-        {showLobbyHelp && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-sm w-full shadow-2xl">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-bold text-gray-900 dark:text-white">How to Play</h2>
-                <button onClick={() => setShowLobbyHelp(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              <ul className="text-sm text-gray-600 dark:text-gray-300 space-y-3">
-                <li className="flex gap-2"><span className="text-orange-500 font-bold shrink-0">1.</span>Watch the ASL sign video and pick the correct word from 4 options</li>
-                <li className="flex gap-2"><span className="text-orange-500 font-bold shrink-0">2.</span>Answer faster than opponents to earn a speed bonus (up to +50 pts)</li>
-                <li className="flex gap-2"><span className="text-orange-500 font-bold shrink-0">3.</span>Wrong answers freeze you for 3 seconds</li>
-                <li className="flex gap-2"><span className="text-orange-500 font-bold shrink-0">4.</span>Most points after all rounds wins</li>
-              </ul>
-              <button
-                onClick={() => setShowLobbyHelp(false)}
-                className="w-full mt-5 bg-linear-to-r from-orange-500 to-red-600 text-white py-3 rounded-xl font-bold"
-              >
-                Got it!
-              </button>
-            </div>
-          </div>
-        )}
 
         {showLeaveConfirm && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">

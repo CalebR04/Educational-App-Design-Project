@@ -68,8 +68,12 @@ export default function DictionaryClient({ allSigns }: { allSigns: SignData[] })
       if (sortField === "alphabetical") {
         cmp = a.name.localeCompare(b.name);
       } else {
-        const ua = getUnderstanding(a) ?? -1;
-        const ub = getUnderstanding(b) ?? -1;
+        const ua = getUnderstanding(a);
+        const ub = getUnderstanding(b);
+        // Unknown words always sink to the bottom regardless of sort direction
+        if (ua === null && ub === null) return 0;
+        if (ua === null) return 1;
+        if (ub === null) return -1;
         cmp = ua - ub;
       }
       return sortDir === "asc" ? cmp : -cmp;

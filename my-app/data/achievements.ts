@@ -26,7 +26,7 @@ export const ALL_ACHIEVEMENTS: AchievementDef[] = [
   { id: "acc_80",  category: "accuracy", title: "Sharp Shooter", subtitle: "80% accuracy",  description: "Reach 80% average accuracy",  gradient: "from-blue-400 to-indigo-500",   unlocked: s => s.accuracy >= 80 },
   { id: "acc_90",  category: "accuracy", title: "Precision Pro", subtitle: "90% accuracy",  description: "Reach 90% average accuracy",  gradient: "from-pink-400 to-pink-600",     unlocked: s => s.accuracy >= 90 },
   { id: "acc_95",  category: "accuracy", title: "Near Perfect",  subtitle: "95% accuracy",  description: "Reach 95% average accuracy",  gradient: "from-violet-400 to-violet-600", unlocked: s => s.accuracy >= 95 },
-  { id: "acc_100", category: "accuracy", title: "Flawless",      subtitle: "100% accuracy", description: "Reach 100% average accuracy", gradient: "from-yellow-300 to-yellow-500", unlocked: s => s.accuracy >= 100 },
+  { id: "acc_100", category: "accuracy", title: "Flawless",      subtitle: "98% accuracy",  description: "Reach 98% average accuracy",  gradient: "from-yellow-300 to-yellow-500", unlocked: s => s.accuracy >= 98 },
 
   // ── Games Played ──────────────────────────────────────────────────────────
   { id: "games_10",  category: "games", title: "Game Newbie",  subtitle: "Played 10 games",  description: "Play 10 mini-games",  gradient: "from-teal-400 to-cyan-500",     unlocked: s => s.gamesPlayed >= 10 },
@@ -42,12 +42,12 @@ export const ALL_ACHIEVEMENTS: AchievementDef[] = [
   // ── High Score — Combos ───────────────────────────────────────────────────
   { id: "hs_combo_1", category: "highscore", title: "Combo Rookie", subtitle: "Combos: 300+ score", description: "Score 300+ in Sign Combos", gradient: "from-purple-400 to-purple-600", unlocked: s => s.comboHigh >= 300 },
   { id: "hs_combo_2", category: "highscore", title: "Combo Expert", subtitle: "Combos: 550+ score", description: "Score 550+ in Sign Combos", gradient: "from-violet-500 to-pink-500",   unlocked: s => s.comboHigh >= 550 },
-  { id: "hs_combo_3", category: "highscore", title: "Combo Master", subtitle: "Combos: 700+ score", description: "Score 700+ in Sign Combos", gradient: "from-pink-500 to-rose-600",     unlocked: s => s.comboHigh >= 700 },
+  { id: "hs_combo_3", category: "highscore", title: "Combo Master", subtitle: "Combos: 750+ score", description: "Score 750+ in Sign Combos", gradient: "from-pink-500 to-rose-600",     unlocked: s => s.comboHigh >= 750 },
 
   // ── High Score — Battle ───────────────────────────────────────────────────
   { id: "hs_battle_1", category: "highscore", title: "Battle Rookie",   subtitle: "Battle: 200+ score", description: "Score 200+ in Sign Battle", gradient: "from-orange-400 to-red-500",  unlocked: s => s.battleHigh >= 200 },
   { id: "hs_battle_2", category: "highscore", title: "Battle Expert",   subtitle: "Battle: 400+ score", description: "Score 400+ in Sign Battle", gradient: "from-red-500 to-rose-600",    unlocked: s => s.battleHigh >= 400 },
-  { id: "hs_battle_3", category: "highscore", title: "Battle Champion", subtitle: "Battle: 700+ score", description: "Score 700+ in Sign Battle", gradient: "from-rose-500 to-pink-600",   unlocked: s => s.battleHigh >= 700 },
+  { id: "hs_battle_3", category: "highscore", title: "Battle Champion", subtitle: "Battle: 630+ score", description: "Score 630+ in Sign Battle", gradient: "from-rose-500 to-pink-600",   unlocked: s => s.battleHigh >= 630 },
 ];
 
 export const CATEGORY_ORDER: Category[] = ["signs", "streak", "accuracy", "games", "highscore"];
