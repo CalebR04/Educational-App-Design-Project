@@ -6,7 +6,7 @@ To access the app, click the link below and create an account to get started!
 
 *Note: Some features unlock as you complete lessons. For an account that has all lessons completed, use the following credentials*
 
-**Email:** admin@gmail.com
+**Email:** test@gmail.com
 
 **Password:** !QAZ1qaz
 
