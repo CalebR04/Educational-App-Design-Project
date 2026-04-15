@@ -11,11 +11,6 @@ To access the app, click the link below and create an account to get started!
 **Password:** !QAZ1qaz
 
 
-
-
-
-
-
 Final presentation video can be found [Here](https://drive.google.com/file/d/1Gcz1HMF8KJRFbqYHG_8_cH8hZGuya7Kv/view?usp=drive_link).
 
 
